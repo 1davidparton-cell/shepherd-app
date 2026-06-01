@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" fill="#1a2744" rx="40"/>
+  <g stroke="#c9a84c" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Shepherd's staff -->
+    <path d="M96 150 L96 70" stroke-width="5"/>
+    <path d="M96 70 Q96 50 112 50 Q128 50 128 66 Q128 82 112 82 L96 82" stroke-width="5"/>
+    <!-- Sheep silhouette -->
+    <ellipse cx="72" cy="118" rx="16" ry="10" fill="#c9a84c" stroke="none"/>
+    <circle cx="60" cy="112" r="8" fill="#c9a84c" stroke="none"/>
+    <line x1="64" y1="128" x2="62" y2="142" stroke-width="3"/>
+    <line x1="70" y1="128" x2="70" y2="142" stroke-width="3"/>
+    <line x1="76" y1="128" x2="78" y2="142" stroke-width="3"/>
+    <line x1="82" y1="128" x2="84" y2="142" stroke-width="3"/>
+  </g>
+</svg>

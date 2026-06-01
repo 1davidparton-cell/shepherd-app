@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  name      String
+  email     String   @unique
+  role      String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  coupleAsHusband       Couple?               @relation("CoupleHusband")
+  coupleAsWife          Couple?               @relation("CoupleWife")
+  counseledCouples      Couple[]              @relation("CoupleCounselor")
+  discipleRelationship  DiscipleRelationship? @relation("Disciple")
+  disciplesAsCounselor  DiscipleRelationship[] @relation("Counselor")
+  adminSettings         AdminSettings?
+  assignedHomework      Homework[]            @relation("AssignedTo")
+  createdHomework       Homework[]            @relation("AssignedBy")
+  homeworkResponses     HomeworkResponse[]
+  sessionNotesGiven     SessionNote[]         @relation("SessionNotesCounselor")
+  personalChatSession   PersonalChatSession?
+  adminChatSessions     ChatSession[]
+}
+
+model Couple {
+  id          String @id @default(cuid())
+  husbandId   String @unique
+  wifeId      String @unique
+  counselorId String
+
+  husband   User @relation("CoupleHusband", fields: [husbandId], references: [id])
+  wife      User @relation("CoupleWife", fields: [wifeId], references: [id])
+  counselor User @relation("CoupleCounselor", fields: [counselorId], references: [id])
+
+  sessionNotes SessionNote[]
+}
+
+model DiscipleRelationship {
+  id          String @id @default(cuid())
+  discipleId  String @unique
+  counselorId String
+
+  disciple  User @relation("Disciple", fields: [discipleId], references: [id])
+  counselor User @relation("Counselor", fields: [counselorId], references: [id])
+}
+
+model AdminSettings {
+  id              String  @id @default(cuid())
+  adminId         String  @unique
+  aiProvider      String  @default("anthropic")
+  encryptedApiKey String?
+  selectedModel   String?
+
+  admin User @relation(fields: [adminId], references: [id])
+}
+
+model Homework {
+  id           String    @id @default(cuid())
+  title        String
+  scriptureRef String?
+  instructions String
+  type         String    @default("custom")
+  assignedToId String
+  assignedById String
+  dueDate      DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  assignedTo User               @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedBy User               @relation("AssignedBy", fields: [assignedById], references: [id])
+  responses  HomeworkResponse[]
+}
+
+model HomeworkResponse {
+  id           String   @id @default(cuid())
+  homeworkId   String
+  userId       String
+  responseText String
+  submittedAt  DateTime @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model SessionNote {
+  id          String   @id @default(cuid())
+  counselorId String
+  subjectId   String?
+  coupleId    String?
+  content     String
+  createdAt   DateTime @default(now())
+
+  counselor User    @relation("SessionNotesCounselor", fields: [counselorId], references: [id])
+  couple    Couple? @relation(fields: [coupleId], references: [id])
+}
+
+model ChatSession {
+  id          String   @id @default(cuid())
+  counselorId String
+  contextId   String?
+  messages    String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  counselor User @relation(fields: [counselorId], references: [id])
+}
+
+model PersonalChatSession {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  messages  String   @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
