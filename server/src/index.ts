@@ -39,6 +39,7 @@ import homeworkRoutes from './routes/homework';
 import chatRoutes from './routes/chat';
 import portalRoutes from './routes/portal';
 import settingsRoutes from './routes/settings';
+import wordRoutes from './routes/word';
 
 app.use('/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -47,6 +48,7 @@ app.use('/api/homework', homeworkRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/word', wordRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

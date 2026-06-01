@@ -13,6 +13,7 @@ import PortalHome from './pages/portal/PortalHome';
 import PortalChat from './pages/portal/PortalChat';
 import PortalHomework from './pages/portal/PortalHomework';
 import PortalScripture from './pages/portal/PortalScripture';
+import PortalWord from './pages/portal/PortalWord';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, loading } = useAuth();
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="chat" element={<PortalChat />} />
           <Route path="homework" element={<PortalHomework />} />
           <Route path="scripture" element={<PortalScripture />} />
+          <Route path="word" element={<PortalWord />} />
         </Route>
       </Routes>
     </AuthProvider>

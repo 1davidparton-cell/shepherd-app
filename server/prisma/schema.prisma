@@ -28,6 +28,7 @@ model User {
   sessionNotesGiven     SessionNote[]         @relation("SessionNotesCounselor")
   personalChatSession   PersonalChatSession?
   adminChatSessions     ChatSession[]
+  scriptureQueries      ScriptureQuery[]
 }
 
 model Couple {
@@ -119,6 +120,20 @@ model PersonalChatSession {
   messages  String   @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ScriptureQuery {
+  id             String   @id @default(cuid())
+  userId         String
+  input          String
+  kind           String
+  acknowledgment String
+  canonical      String
+  passages       String
+  practicalStep  String?
+  createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 }

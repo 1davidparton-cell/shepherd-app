@@ -12,7 +12,8 @@ export type ModelTask =
   | 'admin_counselor_chat'
   | 'homework_synthesis'
   | 'couple_comparison'
-  | 'interview_question_generation';
+  | 'interview_question_generation'
+  | 'scripture_query';
 
 const ANTHROPIC_MODEL_MAP: Record<ModelTask, string> = {
   wife_personal_chat: 'claude-opus-4-5',
@@ -23,6 +24,7 @@ const ANTHROPIC_MODEL_MAP: Record<ModelTask, string> = {
   homework_synthesis: 'claude-opus-4-5',
   couple_comparison: 'claude-opus-4-5',
   interview_question_generation: 'claude-sonnet-4-5',
+  scripture_query: 'claude-opus-4-5',
 };
 
 export interface Message {
