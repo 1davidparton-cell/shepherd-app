@@ -97,7 +97,7 @@ export default function PortalWord() {
   };
 
   return (
-    <div className="p-5 max-w-2xl mx-auto">
+    <div style={{ height: '100%', overflowY: 'auto' }}>
       {view === 'seek' && !result && (
         <SeekView
           input={input}
@@ -142,65 +142,63 @@ function SeekView({
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 }) {
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-serif text-shepherd-navy mb-1">The Word</h2>
-        <p className="text-sm text-shepherd-stone leading-relaxed">
-          Bring what you are carrying. Scripture will meet you there.
-        </p>
-      </div>
+    <div className="h-body">
+      <blockquote className="h-epi">
+        Your word is a lamp to my feet and a light to my path.
+        <cite className="cite">Psalm 119:105</cite>
+      </blockquote>
 
+      <h2 className="h-prompt">What are you carrying?</h2>
 
-      <div className="mb-7">
-        <p className="text-xs text-shepherd-stone uppercase tracking-widest mb-3">What are you fighting</p>
-        <div className="flex flex-wrap gap-2">
-          {STRUGGLES.map(s => (
-            <button
-              key={s.label}
-              onClick={() => { setInput(s.label); textareaRef.current?.focus(); }}
-              className={`flex items-baseline gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors ${
-                input === s.label
-                  ? 'border-shepherd-navy bg-shepherd-navy text-white'
-                  : 'border-gray-200 text-gray-700 hover:border-shepherd-navy/40'
-              }`}
-            >
-              <span className="text-[10px] font-mono text-gray-400">{s.numeral}</span>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <p className="text-xs text-shepherd-stone uppercase tracking-widest mb-2">Or say it plainly</p>
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={e => setInput(e.target.value.slice(0, 2000))}
-          onKeyDown={e => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); onSeek(); }
-          }}
-          placeholder="What do you need?"
-          rows={4}
-          className="w-full bg-transparent border-b-2 border-gray-200 focus:border-shepherd-navy focus:outline-none text-gray-900 text-lg font-serif placeholder:text-gray-300 resize-none py-2 transition-colors"
-        />
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-gray-300 font-mono">{input.length} / 2000</span>
+      <p className="h-label">What are you fighting</p>
+      <div className="h-chips">
+        {STRUGGLES.map(s => (
           <button
-            onClick={onSeek}
-            disabled={!input.trim() || loading}
-            className="text-shepherd-navy hover:text-shepherd-navy-light font-serif italic text-lg disabled:text-gray-300 transition-colors"
+            key={s.label}
+            onClick={() => { setInput(s.label); textareaRef.current?.focus(); }}
+            className={'h-chip' + (input === s.label ? ' sel' : '')}
           >
-            {loading ? 'Seeking...' : 'Receive the Word →'}
+            <span className="gd" />
+            <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#a89f8e' }}>{s.numeral}</span>
+            <span>{s.label}</span>
           </button>
-        </div>
+        ))}
       </div>
 
-      {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+      <p className="h-label" style={{ marginTop: 20 }}>Or say it plainly</p>
+      <textarea
+        ref={textareaRef}
+        value={input}
+        onChange={e => setInput(e.target.value.slice(0, 2000))}
+        onKeyDown={e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); onSeek(); }
+        }}
+        placeholder="What do you need?"
+        rows={4}
+        className={'h-field' + (!input.trim() ? ' empty' : '')}
+        style={{ width: '100%', boxSizing: 'border-box', resize: 'none' }}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+        <span style={{ fontSize: 11, color: '#c6bba7', fontFamily: 'monospace' }}>{input.length} / 2000</span>
+      </div>
+
+      {error && <p style={{ color: '#b05050', fontSize: 14, marginTop: 12 }}>{error}</p>}
+
+      <button
+        onClick={onSeek}
+        disabled={!input.trim() || loading}
+        className="h-submit"
+        style={{ marginTop: 14, opacity: !input.trim() || loading ? 0.4 : 1 }}
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+        {loading ? 'Seeking...' : 'Receive the Word'}
+      </button>
 
       <button
         onClick={onHistory}
-        className="mt-8 text-xs text-gray-400 hover:text-shepherd-stone transition-colors uppercase tracking-widest font-mono"
+        style={{ marginTop: 24, fontFamily: 'var(--ui)', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#a89f8e', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
       >
         Past words →
       </button>
@@ -217,49 +215,52 @@ function ResultView({
   onHistory: () => void;
 }) {
   return (
-    <div ref={resultRef}>
-      <p className="font-serif text-xl text-shepherd-navy leading-snug mb-8">
-        {result.acknowledgment}
-      </p>
+    <div ref={resultRef} className="h-body">
+      <p className="h-ack">{result.acknowledgment}</p>
 
-      <div className="space-y-8">
-        {result.passages.map((p, i) => (
-          <div key={i} className="border-l-2 border-shepherd-gold/40 pl-4">
-            <div className="flex items-baseline gap-3 mb-3">
-              <span className="text-xs font-mono text-gray-400">{romanize(i + 1)}</span>
-              <h3 className="font-serif text-lg text-shepherd-navy">{p.canonical}</h3>
-              <span className="text-xs font-mono text-gray-300 ml-auto">{p.translation}</span>
-            </div>
-            <div
-              className="text-gray-800 text-[16px] leading-relaxed font-serif mb-3 [&_.verse-num]:text-[11px] [&_.verse-num]:text-gray-400 [&_.verse-num]:align-super [&_.verse-num]:mr-0.5"
-              dangerouslySetInnerHTML={{ __html: p.html || `<p>${p.reference}</p>` }}
-            />
-            <p className="text-sm text-shepherd-stone italic">{p.why}</p>
+      {result.passages.map((p, i) => (
+        <div key={i} className="h-passage">
+          <div className="h-ref">
+            <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#a89f8e', marginRight: 4 }}>{romanize(i + 1)}</span>
+            {p.canonical}
+            <span style={{ fontFamily: 'var(--ui)', fontSize: 10, color: '#c6bba7', marginLeft: 'auto' }}>{p.translation}</span>
           </div>
-        ))}
-      </div>
+          <div
+            className="h-text"
+            dangerouslySetInnerHTML={{ __html: p.html || `<p>${p.reference}</p>` }}
+          />
+          <p className="h-why">{p.why}</p>
+        </div>
+      ))}
 
       {result.practicalStep && (
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <p className="text-xs text-gray-400 uppercase tracking-widest font-mono mb-2">The next step</p>
-          <p className="text-gray-800 text-sm leading-relaxed">{result.practicalStep}</p>
+        <div className="h-step">
+          <p className="sl">The next step</p>
+          <p>{result.practicalStep}</p>
         </div>
       )}
 
-      <div className="flex items-center gap-6 mt-10">
-        <button
-          onClick={onReset}
-          className="font-serif italic text-shepherd-navy text-lg hover:text-shepherd-navy-light transition-colors"
-        >
-          ← Bring something else
+      <div className="h-foot">
+        <button onClick={onReset} className="h-again">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Seek again
         </button>
-        <button
-          onClick={onHistory}
-          className="text-xs text-gray-400 hover:text-shepherd-stone transition-colors uppercase tracking-widest font-mono"
-        >
-          Past words
-        </button>
+        <div className="h-saved">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Saved
+        </div>
       </div>
+
+      <button
+        onClick={onHistory}
+        style={{ marginTop: 16, fontFamily: 'var(--ui)', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#a89f8e', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      >
+        Past words
+      </button>
     </div>
   );
 }
@@ -273,32 +274,34 @@ function HistoryView({ entries, loading, onBack }: {
     new Date(ts).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toLowerCase();
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-serif text-shepherd-navy">Past Words</h2>
-        <button onClick={onBack} className="text-xs text-gray-400 hover:text-shepherd-stone transition-colors uppercase tracking-widest font-mono">
-          ← Back
-        </button>
-      </div>
+    <div className="h-body">
+      <button onClick={onBack} className="h-back">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
 
-      {loading && <p className="text-sm text-gray-400">Loading...</p>}
+      <h2 className="h-prompt" style={{ marginTop: 8 }}>Past Words</h2>
+
+      {loading && <p style={{ fontSize: 14, color: 'var(--stone)', marginTop: 12 }}>Loading...</p>}
 
       {!loading && entries.length === 0 && (
-        <div className="border border-dashed border-gray-200 rounded-xl p-10 text-center">
-          <p className="font-serif text-gray-400 italic">Nothing yet.</p>
-          <p className="text-sm text-gray-400 mt-1">Every time you seek the Word here, it is kept.</p>
+        <div style={{ border: '1px dashed var(--card-line)', borderRadius: 14, padding: '40px 24px', textAlign: 'center', marginTop: 16 }}>
+          <p style={{ fontFamily: 'var(--head)', color: 'var(--stone)', fontStyle: 'italic', margin: 0 }}>Nothing yet.</p>
+          <p style={{ fontSize: 13, color: 'var(--stone)', marginTop: 6 }}>Every time you seek the Word here, it is kept.</p>
         </div>
       )}
 
-      <div className="space-y-0 divide-y divide-gray-100">
+      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
         {entries.map(e => (
-          <div key={e.id} className="py-5">
-            <div className="flex items-baseline gap-3 mb-1">
-              <span className="text-xs font-mono text-shepherd-gold">{shortenCanonical(e.canonical)}</span>
-              <span className="text-xs font-mono text-gray-300">{fmt(e.createdAt)}</span>
+          <div key={e.id} className="h-passage">
+            <div className="h-ref">
+              <span style={{ color: 'var(--gold)' }}>{shortenCanonical(e.canonical)}</span>
+              <span style={{ fontFamily: 'var(--ui)', fontSize: 10, color: '#c6bba7', marginLeft: 8 }}>{fmt(e.createdAt)}</span>
             </div>
-            <p className="font-serif text-shepherd-navy text-[15px] leading-snug mb-1">{e.acknowledgment}</p>
-            <p className="text-xs text-gray-400 italic truncate">{e.input}</p>
+            <p className="h-ack" style={{ fontSize: 15, margin: '0 0 4px' }}>{e.acknowledgment}</p>
+            <p style={{ fontSize: 12, color: '#a89f8e', fontStyle: 'italic', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.input}</p>
           </div>
         ))}
       </div>

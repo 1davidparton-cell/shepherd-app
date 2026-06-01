@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ShepherdMark } from '../../components/ShepherdMark';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', end: true },
@@ -19,27 +20,27 @@ export default function AdminLayout() {
     navigate('/login');
   };
 
+  const firstName = user?.name?.split(' ')[0] ?? '';
+  const initial = user?.name?.[0]?.toUpperCase() ?? '?';
+
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      <aside className="w-56 bg-shepherd-navy flex flex-col">
-        <div className="p-5 border-b border-white/10">
-          <h1 className="text-xl font-serif text-white">Shepherd</h1>
-          <p className="text-shepherd-gold/60 text-xs mt-0.5">Admin Hub</p>
+    <div className="w-full min-h-screen flex">
+      <aside className="ad-side">
+        <div className="ad-brand">
+          <ShepherdMark size={36} color="#c9a84c" />
+          <div className="bw">
+            <b>Shepherd</b>
+            <span>Admin Hub</span>
+          </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5">
+        <nav className="ad-nav">
           {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'bg-shepherd-gold/20 text-shepherd-gold'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`
-              }
+              className={({ isActive }) => 'ad-navitem' + (isActive ? ' active' : '')}
             >
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={item.icon} />
@@ -49,18 +50,17 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="text-white/70 text-xs mb-3">{user?.name}</div>
-          <button
-            onClick={handleLogout}
-            className="text-white/40 hover:text-white/70 text-xs transition-colors"
-          >
-            Sign out
-          </button>
+        <div className="ad-side-foot">
+          <div className="av">{initial}</div>
+          <div className="nm">
+            <b>{firstName || user?.name}</b>
+            <span>Counselor</span>
+          </div>
+          <button onClick={handleLogout}>Sign out</button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="ad-main">
         <Outlet />
       </main>
     </div>

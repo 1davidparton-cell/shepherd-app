@@ -17,6 +17,28 @@ const ROLE_LABELS: Record<string, string> = {
   male_disciple: 'Male Disciple', female_disciple: 'Female Disciple', admin: 'Admin',
 };
 
+const AVATAR_COLORS: Record<string, string> = {
+  husband: '#1e3a5f',
+  wife: '#5f3a1e',
+  male_disciple: '#1e4a3a',
+  female_disciple: '#4a1e3a',
+  admin: '#3a3a3a',
+};
+
+const ROLE_DOT_COLORS: Record<string, string> = {
+  husband: '#1e3a5f',
+  wife: '#5f3a1e',
+  male_disciple: '#1e4a3a',
+  female_disciple: '#4a1e3a',
+  admin: '#3a3a3a',
+};
+
+function badgeClass(role: string) {
+  if (role === 'husband' || role === 'wife') return 'badge spouse';
+  if (role === 'admin') return 'badge admin';
+  return 'badge disciple';
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [filter, setFilter] = useState('all');
@@ -46,32 +68,60 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <>
+      <div className="ad-head">
         <div>
-          <h2 className="text-2xl font-serif text-gray-900">People</h2>
-          <p className="text-gray-500 text-sm">Manage counselees and disciples</p>
+          <h1 className="ht">People</h1>
+          <p className="hs">Manage counselees and disciples</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-shepherd-navy text-white px-4 py-2 rounded-lg text-sm hover:bg-shepherd-navy-light transition-colors"
-        >
+        <button className="btn-primary" onClick={() => setShowForm(true)}>
           Add Person
         </button>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        {['all', ...ROLES].map(r => (
-          <button
-            key={r}
-            onClick={() => setFilter(r)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              filter === r ? 'bg-shepherd-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-shepherd-navy/30'
-            }`}
-          >
-            {r === 'all' ? 'All' : ROLE_LABELS[r]}
-          </button>
-        ))}
+      <div className="ad-body">
+        <div className="ad-filters">
+          {['all', ...ROLES].map(r => (
+            <button
+              key={r}
+              onClick={() => setFilter(r)}
+              className={'fpill' + (filter === r ? ' on' : '')}
+            >
+              {r === 'all' ? 'All' : ROLE_LABELS[r]}
+            </button>
+          ))}
+        </div>
+
+        {filtered.length === 0 ? (
+          <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', padding: '2rem 0', textAlign: 'center' }}>No people found.</p>
+        ) : (
+          <div className="table">
+            <div className="thead">
+              <span>Name</span>
+              <span>Role</span>
+              <span>Email</span>
+              <span>Homework</span>
+              <span />
+            </div>
+            {filtered.map(u => (
+              <div key={u.id} className="trow">
+                <div className="tname">
+                  <div className="av" style={{ background: AVATAR_COLORS[u.role] ?? '#1e3a5f' }}>
+                    {u.name[0]?.toUpperCase()}
+                  </div>
+                  <b>{u.name}</b>
+                </div>
+                <span className={badgeClass(u.role)}>{ROLE_LABELS[u.role]}</span>
+                <span className="temail">{u.email}</span>
+                <div className="thw">
+                  <span className="dotp" style={{ background: ROLE_DOT_COLORS[u.role] ?? '#1e3a5f' }} />
+                  {u.homeworkStats.completed}/{u.homeworkStats.total}
+                </div>
+                <span className="kebab">⋯</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {showForm && (
@@ -80,53 +130,30 @@ export default function AdminUsers() {
             <h3 className="font-serif text-lg text-gray-900 mb-4">Add Person</h3>
             {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
             <div className="space-y-3">
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Google email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-                {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-              </select>
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Notes (optional)" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              <div className="field">
+                <input className="inp" placeholder="Full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+              </div>
+              <div className="field">
+                <input className="inp" placeholder="Google email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+              </div>
+              <div className="field">
+                <select className="inp" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+                  {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <textarea className="inp" placeholder="Notes (optional)" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button type="button" onClick={() => setShowForm(false)} className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm">Cancel</button>
-              <button type="submit" disabled={saving} className="flex-1 bg-shepherd-navy text-white rounded-lg py-2 text-sm disabled:opacity-50">
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary flex-1">
                 {saving ? 'Adding...' : 'Add Person'}
               </button>
             </div>
           </form>
         </div>
       )}
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">No people found.</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Role</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Email</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Homework</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map(u => (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-block px-2 py-0.5 bg-shepherd-navy/10 text-shepherd-navy rounded-full text-xs">{ROLE_LABELS[u.role]}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{u.email}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {u.homeworkStats.completed}/{u.homeworkStats.total}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+    </>
   );
 }

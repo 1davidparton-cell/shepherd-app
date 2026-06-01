@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ShepherdMark } from '../../components/ShepherdMark';
 
 const NAV_ITEMS = [
   { to: '/portal', label: 'Home', end: true, icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -19,39 +20,46 @@ export default function PortalLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-shepherd-cream">
-      <header className="bg-shepherd-navy px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-serif text-white">Shepherd</h1>
-          <p className="text-shepherd-gold/60 text-xs">{user?.name}</p>
+    <div className="screen portal">
+      <header className="p-head">
+        <div />
+        <span className="p-word" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <ShepherdMark size={22} color="#c9a84c" stroke={9} />
+          Shepherd
+        </span>
+        <div className="p-name">
+          {user?.name && (
+            <>
+              <span>{user.name.split(' ')[0]}</span>
+              <div className="dot">{user.name[0]}</div>
+            </>
+          )}
+          <button
+            onClick={handleLogout}
+            style={{ fontSize: 11, color: 'rgba(249,245,239,0.38)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}
+          >
+            out
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-white/40 hover:text-white/70 text-xs transition-colors"
-        >
-          Sign out
-        </button>
       </header>
 
-      <main className="flex-1 overflow-auto pb-20">
+      <main className="p-body" style={{ overflowY: 'auto' }}>
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex">
+      <nav className="p-nav" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
         {NAV_ITEMS.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             end={'end' in item ? (item as { end?: boolean }).end : false}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
-                isActive ? 'text-shepherd-navy' : 'text-gray-400'
-              }`
-            }
+            className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={item.icon} />
-            </svg>
+            <div className="nav-icon-wrap">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={item.icon} />
+              </svg>
+            </div>
             {item.label}
           </NavLink>
         ))}

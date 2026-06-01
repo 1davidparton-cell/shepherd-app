@@ -22,6 +22,7 @@ export default function AdminSettings() {
   const [showKey, setShowKey] = useState(false);
   const [revealedKey, setRevealedKey] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [selectedProvider, setSelectedProvider] = useState('anthropic');
@@ -38,6 +39,7 @@ export default function AdminSettings() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setSaved(false);
     try {
       const updated = await api.put<Settings>('/api/settings', {
         aiProvider: selectedProvider,
@@ -47,6 +49,8 @@ export default function AdminSettings() {
       setSettings(updated);
       setApiKey('');
       setTestResult(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } finally {
       setSaving(false);
     }
@@ -82,92 +86,132 @@ export default function AdminSettings() {
   const modelOptions = selectedProvider === 'google' ? GOOGLE_MODELS : OPENAI_MODELS;
 
   return (
-    <div className="p-8 max-w-xl">
-      <h2 className="text-2xl font-serif text-gray-900 mb-1">Settings</h2>
-      <p className="text-gray-500 text-sm mb-8">AI provider configuration</p>
+    <>
+      <div className="ad-head">
+        <h1 className="ht">Settings</h1>
+        <p className="hs">AI provider configuration</p>
+      </div>
 
-      <form onSubmit={save} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">AI Provider</label>
-          <select
-            value={selectedProvider}
-            onChange={e => { setSelectedProvider(e.target.value); setSelectedModel(''); }}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-          >
-            {PROVIDERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </select>
-          {selectedProvider === 'anthropic' && (
-            <p className="text-xs text-gray-400 mt-1.5">Models are assigned automatically per task type.</p>
-          )}
-        </div>
+      <div className="ad-body">
+        <form onSubmit={save} className="ad-form">
 
-        {needsModel && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Model</label>
-            <select
-              value={selectedModel}
-              onChange={e => setSelectedModel(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">Select model...</option>
-              {modelOptions.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+          <div className="fsec">
+            <div className="fst">AI Provider</div>
+            <div className="fsd">Choose the language model powering Shepherd's counseling assistance.</div>
+
+            <div className="seg">
+              {PROVIDERS.map(p => (
+                <div
+                  key={p.value}
+                  className={'opt' + (selectedProvider === p.value ? ' on' : '')}
+                  onClick={() => { setSelectedProvider(p.value); setSelectedModel(''); }}
+                >
+                  {p.label}
+                </div>
+              ))}
+            </div>
+
+            {selectedProvider === 'anthropic' && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--col-muted)', marginTop: 8 }}>
+                Models are assigned automatically per task type.
+              </p>
+            )}
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            API Key
-            {settings?.hasApiKey && <span className="ml-2 text-xs text-green-600 font-normal">Key saved</span>}
-          </label>
-
-          {settings?.hasApiKey && (
-            <div className="flex gap-2 mb-2">
-              <div className="flex-1 font-mono text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-700 truncate">
-                {revealedKey || '••••••••••••••••••••••••••••••••'}
+          {needsModel && (
+            <div className="fsec">
+              <div className="fst">Model</div>
+              <div className="fsd">Select the specific model variant to use.</div>
+              <div className="field">
+                <label>Model</label>
+                <select
+                  className="inp"
+                  value={selectedModel}
+                  onChange={e => setSelectedModel(e.target.value)}
+                >
+                  <option value="">Select model...</option>
+                  {modelOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
               </div>
-              <button type="button" onClick={revealKey} className="text-xs text-shepherd-navy border border-gray-200 rounded-lg px-3 hover:bg-gray-50">
-                {revealedKey ? 'Hide' : 'Reveal'}
-              </button>
             </div>
           )}
 
-          <input
-            type="password"
-            placeholder={settings?.hasApiKey ? 'Enter new key to replace...' : 'Paste API key...'}
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono"
-            autoComplete="off"
-          />
-        </div>
+          <div className="fsec">
+            <div className="fst">API Key</div>
+            <div className="fsd">
+              Your API key is stored encrypted on the server.
+              {settings?.hasApiKey && <span style={{ color: 'var(--col-success)', marginLeft: 8 }}>Key saved.</span>}
+            </div>
 
-        {testResult && (
-          <div className={`text-sm rounded-lg px-3 py-2 ${testResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {testResult.message}
+            {settings?.hasApiKey && (
+              <div className="field">
+                <label>Current key</label>
+                <div className="keyrow">
+                  <input
+                    className="inp"
+                    style={{ fontFamily: 'monospace' }}
+                    readOnly
+                    value={revealedKey || '••••••••••••••••••••••••••••••••'}
+                    type={revealedKey ? 'text' : 'password'}
+                  />
+                  <button type="button" className="reveal" onClick={revealKey}>
+                    {revealedKey ? 'Hide' : 'Reveal'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="field">
+              <label>{settings?.hasApiKey ? 'Replace key' : 'API key'}</label>
+              <input
+                type="password"
+                className="inp"
+                style={{ fontFamily: 'monospace' }}
+                placeholder={settings?.hasApiKey ? 'Enter new key to replace...' : 'Paste API key...'}
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
           </div>
-        )}
 
-        <div className="flex gap-3 pt-1">
-          {settings?.hasApiKey && (
-            <button
-              type="button"
-              onClick={testConnection}
-              disabled={testing}
-              className="border border-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-            >
-              {testing ? 'Testing...' : 'Test Connection'}
-            </button>
+          {testResult && (
+            <div className="fsec">
+              <div style={{
+                fontSize: '0.875rem',
+                padding: '10px 14px',
+                borderRadius: 8,
+                background: testResult.ok ? 'var(--col-success-bg, #f0fdf4)' : 'var(--col-error-bg, #fef2f2)',
+                color: testResult.ok ? '#166534' : '#991b1b',
+              }}>
+                {testResult.message}
+              </div>
+            </div>
           )}
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-shepherd-navy text-white rounded-lg px-4 py-2 text-sm hover:bg-shepherd-navy-light disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
-      </form>
-    </div>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {settings?.hasApiKey && (
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={testConnection}
+                disabled={testing}
+              >
+                {testing ? 'Testing...' : 'Test Connection'}
+              </button>
+            )}
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Settings'}
+            </button>
+            {saved && (
+              <div className="saved">
+                <div className="gd" />
+                Saved
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
+    </>
   );
 }

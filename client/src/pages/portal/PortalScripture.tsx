@@ -71,98 +71,117 @@ export default function PortalScripture() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-serif text-shepherd-navy px-1">Scripture</h2>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-        <div className="flex gap-2">
-          <select
-            value={book}
-            onChange={e => setBook(e.target.value)}
-            className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-sm"
-          >
-            {BOOKS.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <input
-            type="number"
-            value={chapter}
-            onChange={e => setChapter(e.target.value)}
-            min={1}
-            className="w-16 border border-gray-200 rounded-lg px-2 py-2 text-sm text-center"
-            placeholder="Ch"
-          />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="scr-selector" style={{ flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 9 }}>
+          <button className="scr-pick" style={{ padding: 0, cursor: 'default', flex: 1 }}>
+            <select
+              value={book}
+              onChange={e => setBook(e.target.value)}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: 'var(--ui)', fontSize: 13.5, fontWeight: 600, color: 'var(--navy)', cursor: 'pointer', width: '100%' }}
+            >
+              {BOOKS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 14, height: 14, color: 'var(--stone)', flexShrink: 0 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <button className="scr-pick chap" style={{ padding: '11px 10px', gap: 0 }}>
+            <input
+              type="number"
+              value={chapter}
+              onChange={e => setChapter(e.target.value)}
+              min={1}
+              style={{ width: '100%', background: 'none', border: 'none', outline: 'none', fontFamily: 'var(--ui)', fontSize: 13.5, fontWeight: 600, color: 'var(--navy)', textAlign: 'center' }}
+              placeholder="Ch"
+            />
+          </button>
           <button
             onClick={handleNavigate}
-            className="bg-shepherd-navy text-white rounded-lg px-4 py-2 text-sm"
+            style={{ background: 'var(--navy)', color: '#fff', border: 'none', borderRadius: 11, padding: '11px 16px', fontFamily: 'var(--ui)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}
           >
             Go
           </button>
         </div>
-
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && fetchPassage(query)}
             placeholder="Or search a passage (e.g. Romans 5:1-11)"
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-shepherd-navy/30"
+            style={{ flex: 1, border: '1px solid var(--card-line)', borderRadius: 11, padding: '11px 14px', fontFamily: 'var(--ui)', fontSize: 13.5, outline: 'none', background: '#fff', color: 'var(--ink)' }}
           />
           <button
             onClick={() => fetchPassage(query)}
-            className="border border-gray-200 text-gray-600 rounded-lg px-3 py-2 text-sm"
+            style={{ border: '1px solid var(--card-line)', borderRadius: 11, padding: '11px 14px', fontFamily: 'var(--ui)', fontSize: 13.5, fontWeight: 600, color: 'var(--stone)', background: '#fff', cursor: 'pointer' }}
           >
             Search
           </button>
         </div>
       </div>
 
-      {passage && (
+      {loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0', fontSize: 14, color: 'var(--stone)' }}>
+          Loading passage...
+        </div>
+      )}
+
+      {passage && !loading && (
         <>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <h3 className="font-serif text-shepherd-navy text-sm">{passage.query}</h3>
+          <div className="scr-page" style={{ overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <h3 className="scr-title" style={{ fontSize: 22, margin: 0 }}>{passage.query}</h3>
               <button
                 onClick={fetchAudio}
-                className="flex items-center gap-1.5 text-xs text-shepherd-stone hover:text-shepherd-navy transition-colors"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--stone)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--ui)', fontWeight: 600 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.536 8.464a5 5 0 010 7.072M12 6v12m-3.536-9.536a5 5 0 000 7.072" />
                 </svg>
                 Listen
               </button>
             </div>
-
-            <div className="px-5 py-4 max-h-96 overflow-auto">
-              <p className="text-sm text-gray-800 leading-7 font-serif whitespace-pre-wrap">
-                {passage.passages[0]}
-              </p>
+            <div className="scr-passage">
+              <p style={{ whiteSpace: 'pre-wrap' }}>{passage.passages[0]}</p>
             </div>
           </div>
 
           {audioUrl && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-              <audio ref={audioRef} controls src={audioUrl} className="w-full" />
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Speed:</span>
-                {SPEEDS.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setSpeed(s)}
-                    className={`text-xs px-2 py-1 rounded-full transition-colors ${
-                      speed === s ? 'bg-shepherd-navy text-white' : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {s}x
-                  </button>
-                ))}
+            <div className="scr-player">
+              <button className="scr-play" onClick={() => audioRef.current?.paused ? audioRef.current?.play() : audioRef.current?.pause()}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <div className="scr-track">
+                <audio ref={audioRef} src={audioUrl} style={{ display: 'none' }} />
+                <div className="scr-bar">
+                  <div className="fill" />
+                  <div className="knob" />
+                </div>
+                <div className="scr-time">
+                  <span>{passage.query}</span>
+                </div>
               </div>
             </div>
           )}
-        </>
-      )}
 
-      {loading && (
-        <div className="flex justify-center py-8 text-gray-400 text-sm">Loading passage...</div>
+          {audioUrl && (
+            <div className="scr-speeds">
+              <span className="lbl">Speed</span>
+              {SPEEDS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  className={'spd' + (speed === s ? ' on' : '')}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

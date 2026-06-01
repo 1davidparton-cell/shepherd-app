@@ -5,6 +5,18 @@ interface Message { role: 'user' | 'assistant'; content: string }
 interface Session { id: string; contextId: string | null; messages: Message[]; updatedAt: string }
 interface UserRecord { id: string; name: string; role: string }
 
+const ROLE_COLORS: Record<string, string> = {
+  husband: '#1e3a5f',
+  wife: '#5f3a1e',
+  male_disciple: '#1e4a3a',
+  female_disciple: '#4a1e3a',
+  admin: '#3a3a3a',
+};
+
+function initials(name: string) {
+  return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+}
+
 export default function AdminChat() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
@@ -12,6 +24,7 @@ export default function AdminChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,92 +69,107 @@ export default function AdminChat() {
     }
   };
 
+  const filtered = users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()));
+
   return (
-    <div className="h-screen flex">
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="font-medium text-gray-900 text-sm">Counselees</h3>
+    <div className="ac">
+      <div className="ac-list">
+        <div className="ac-search">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search counselees..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
-        <div className="flex-1 overflow-auto">
-          {users.map(u => (
-            <button
+        <div className="ac-people">
+          {filtered.map(u => (
+            <div
               key={u.id}
+              className={'ac-person' + (selectedUser?.id === u.id ? ' active' : '')}
               onClick={() => startSession(u)}
-              className={`w-full text-left px-4 py-3 text-sm border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                selectedUser?.id === u.id ? 'bg-shepherd-navy/5 border-l-2 border-l-shepherd-gold' : ''
-              }`}
             >
-              <div className="font-medium text-gray-900">{u.name}</div>
-              <div className="text-gray-400 text-xs capitalize">{u.role.replace('_', ' ')}</div>
-            </button>
+              <div className="av" style={{ background: ROLE_COLORS[u.role] ?? '#1e3a5f' }}>
+                {initials(u.name)}
+              </div>
+              <div className="tx">
+                <div className="r1">
+                  <span>{u.name}</span>
+                </div>
+                <div className="sn">Start or continue session</div>
+                <div className="rl">{u.role.replace('_', ' ')}</div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="ac-panel">
         {!selectedUser ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <div className="text-4xl mb-3">✦</div>
-              <p className="text-sm">Select a counselee to begin</p>
-            </div>
+          <div className="ac-empty">
+            <p>Select a counselee to begin a session.</p>
           </div>
         ) : (
           <>
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
-              <h3 className="font-medium text-gray-900">{selectedUser.name}</h3>
-              <p className="text-xs text-gray-400 capitalize">{selectedUser.role.replace('_', ' ')}</p>
+            <div className="ac-phead">
+              <div className="who">
+                <b>{selectedUser.name}</b>
+                <span>{selectedUser.role.replace('_', ' ')}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="ac-pill">View Homework</button>
+                <button className="ac-pill">Responses</button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-6 space-y-4">
+            <div className="ac-msgs">
               {messages.length === 0 && (
-                <div className="text-center text-gray-400 text-sm py-8">
+                <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '2rem 0' }}>
                   Start the counseling session. Ask about their progress, generate questions, or compare responses.
-                </div>
+                </p>
               )}
               {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
-                    m.role === 'user'
-                      ? 'bg-shepherd-navy text-white'
-                      : 'bg-white border border-gray-200 text-gray-800'
-                  }`}>
-                    {m.content}
+                m.role === 'user' ? (
+                  <div key={i} className="ac-msg ac-user">{m.content}</div>
+                ) : (
+                  <div key={i} className="ac-msg ac-ai">
+                    <p className="lbl">Shepherd</p>
+                    <p>{m.content}</p>
                   </div>
-                </div>
+                )
               ))}
               {sending && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
-                    <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
+                <div className="ac-msg ac-ai">
+                  <p className="lbl">Shepherd</p>
+                  <p style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </p>
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
 
-            <div className="bg-white border-t border-gray-200 p-4">
-              <div className="flex gap-3">
-                <textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="What should we address next? Generate questions, compare responses..."
-                  rows={2}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-shepherd-navy/40"
-                />
-                <button
-                  onClick={send}
-                  disabled={sending || !input.trim()}
-                  className="bg-shepherd-navy text-white rounded-lg px-4 py-2 text-sm disabled:opacity-40 self-end"
-                >
-                  Send
-                </button>
-              </div>
+            <div className="ac-input">
+              <textarea
+                className="ac-field"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                placeholder="What should we address next? Generate questions, compare responses..."
+                rows={2}
+              />
+              <button
+                className="btn-primary"
+                onClick={send}
+                disabled={sending || !input.trim()}
+              >
+                Send
+              </button>
             </div>
           </>
         )}

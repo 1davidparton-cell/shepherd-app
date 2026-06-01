@@ -49,65 +49,62 @@ export default function PortalChat() {
     : `This is your space to be honest — about struggle, failure, or anything you're facing. I'll receive what you share without condemnation. And I'll be direct with you about what faithfulness looks like from here.`;
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading...</div>;
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, fontSize: 14, color: 'var(--stone)' }}>Loading...</div>;
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+    <div className="chat-body" style={{ height: '100%' }}>
+      <div className="chat-scroll" style={{ overflowY: 'auto', flex: 1 }}>
         {messages.length === 0 && (
-          <div className="bg-shepherd-navy/5 border border-shepherd-navy/10 rounded-xl p-5 mx-1">
-            <p className="text-shepherd-navy text-sm leading-relaxed font-serif">{welcomeMessage}</p>
+          <div className="chat-welcome">
+            <p className="cw-label">Your counseling space</p>
+            <p className="cw-text">{welcomeMessage}</p>
           </div>
         )}
 
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-              m.role === 'user'
-                ? 'bg-shepherd-navy text-white rounded-br-sm'
-                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
-            }`}>
-              {m.content}
+          m.role === 'user' ? (
+            <div key={i} className="msg msg-user">
+              <p>{m.content}</p>
             </div>
-          </div>
+          ) : (
+            <div key={i} className="msg msg-ai">
+              <div className="ai-text">
+                <p>{m.content}</p>
+              </div>
+            </div>
+          )
         ))}
 
         {sending && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-              <div className="flex gap-1 items-center">
-                <span className="w-1.5 h-1.5 bg-shepherd-stone rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 bg-shepherd-stone rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-shepherd-stone rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
+          <div className="typing">
+            <i /><i /><i />
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div className="bg-white border-t border-gray-200 p-3">
-        <div className="flex gap-2 items-end">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Share what's on your heart..."
-            rows={2}
-            className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-shepherd-navy/30"
-          />
-          <button
-            onClick={send}
-            disabled={sending || !input.trim()}
-            className="bg-shepherd-navy text-white rounded-xl p-2.5 disabled:opacity-40 shrink-0"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </div>
+      <div className="chat-input">
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          placeholder="Share what's on your heart..."
+          rows={2}
+          className="ci-field"
+          style={{ resize: 'none' }}
+        />
+        <button
+          onClick={send}
+          disabled={sending || !input.trim()}
+          className="ci-send"
+          style={{ opacity: sending || !input.trim() ? 0.4 : 1 }}
+        >
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+        </button>
       </div>
     </div>
   );

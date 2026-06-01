@@ -9,6 +9,18 @@ interface Response {
   user: { id: string; name: string; role: string };
 }
 
+function initials(name: string) {
+  return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+}
+
+const AVATAR_COLORS: Record<string, string> = {
+  husband: '#1e3a5f',
+  wife: '#5f3a1e',
+  male_disciple: '#1e4a3a',
+  female_disciple: '#4a1e3a',
+  admin: '#3a3a3a',
+};
+
 export default function AdminResponses() {
   const [responses, setResponses] = useState<Response[]>([]);
   const [synthesis, setSynthesis] = useState<{ [userId: string]: string }>({});
@@ -37,53 +49,61 @@ export default function AdminResponses() {
   }, {});
 
   return (
-    <div className="p-8">
-      <h2 className="text-2xl font-serif text-gray-900 mb-1">Responses</h2>
-      <p className="text-gray-500 text-sm mb-8">Review submitted homework and generate AI synthesis</p>
+    <>
+      <div className="ad-head">
+        <h1 className="ht">Responses</h1>
+        <p className="hs">Review submitted homework and generate AI synthesis</p>
+      </div>
 
-      <div className="space-y-6">
+      <div className="ad-body">
+        {responses.length === 0 && (
+          <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>
+            No responses submitted yet.
+          </p>
+        )}
+
         {Object.entries(grouped).map(([userId, group]) => (
-          <div key={userId} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div>
-                <span className="font-medium text-gray-900">{group.name}</span>
-                <span className="ml-2 text-xs text-gray-400 capitalize">{group.role.replace('_', ' ')}</span>
+          <div key={userId} style={{ marginBottom: 24 }}>
+            <div className="rp-gh">
+              <div className="av" style={{ background: AVATAR_COLORS[group.role] ?? '#1e3a5f' }}>
+                {initials(group.name)}
               </div>
+              <b>{group.name}</b>
+              <span>{group.role.replace('_', ' ')}</span>
               <button
+                className={synthesizing === userId ? 'btn-ghost' : 'btn-primary'}
                 onClick={() => synthesize(userId)}
                 disabled={synthesizing === userId}
-                className="text-xs bg-shepherd-navy/10 text-shepherd-navy px-3 py-1.5 rounded-full hover:bg-shepherd-navy/20 disabled:opacity-50"
+                style={{ marginLeft: 'auto' }}
               >
                 {synthesizing === userId ? 'Synthesizing...' : 'AI Synthesis'}
               </button>
             </div>
 
             {synthesis[userId] && (
-              <div className="px-5 py-4 bg-shepherd-cream border-b border-gray-100">
-                <p className="text-xs font-medium text-shepherd-stone uppercase tracking-wide mb-2">AI Synthesis</p>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{synthesis[userId]}</p>
+              <div className="rp-syn">
+                <div className="sl">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width={14} height={14}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI Synthesis
+                </div>
+                <p>{synthesis[userId]}</p>
               </div>
             )}
 
-            <div className="divide-y divide-gray-50">
-              {group.responses.map(r => (
-                <div key={r.id} className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-gray-900">{r.homework.title}</span>
-                    {r.homework.scriptureRef && <span className="text-xs text-shepherd-stone">{r.homework.scriptureRef}</span>}
-                    <span className="ml-auto text-xs text-gray-400">{new Date(r.submittedAt).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{r.responseText}</p>
+            {group.responses.map(r => (
+              <div key={r.id} className="rp-entry">
+                <div className="q">
+                  {r.homework.title}
+                  {r.homework.scriptureRef && <span style={{ marginLeft: 8, fontWeight: 400, opacity: 0.6 }}>{r.homework.scriptureRef}</span>}
                 </div>
-              ))}
-            </div>
+                <p className="a">{r.responseText}</p>
+              </div>
+            ))}
           </div>
         ))}
-
-        {responses.length === 0 && (
-          <div className="text-center text-gray-400 py-12 text-sm">No responses submitted yet.</div>
-        )}
       </div>
-    </div>
+    </>
   );
 }
