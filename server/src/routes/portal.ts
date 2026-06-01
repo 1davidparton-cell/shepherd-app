@@ -16,7 +16,7 @@ router.get('/chat', requireAuth, async (req, res) => {
 });
 
 router.post('/chat/message', requireAuth, async (req, res) => {
-  const user = req.user as { id: string; role: string };
+  const user = req.user as { id: string; role: string; counselorId?: string };
   const { content } = req.body;
 
   let session = await prisma.personalChatSession.findUnique({ where: { userId: user.id } });
@@ -45,21 +45,29 @@ router.post('/chat/message', requireAuth, async (req, res) => {
 
   const task: ModelTask = 'personal_chat';
 
-  const result = await route(task, systemPrompt, messages);
-  messages.push({ role: 'assistant', content: result.content });
+  // Use the disciple's counselor's API key; fall back to their own if they are the admin
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: { counselorId: true } });
+  const keyOwnerId = fullUser?.counselorId || user.id;
 
-  if (session) {
-    await prisma.personalChatSession.update({
-      where: { userId: user.id },
-      data: { messages: JSON.stringify(messages) },
-    });
-  } else {
-    session = await prisma.personalChatSession.create({
-      data: { userId: user.id, messages: JSON.stringify(messages) },
-    });
+  try {
+    const result = await route(task, systemPrompt, messages, keyOwnerId);
+    messages.push({ role: 'assistant', content: result.content });
+
+    if (session) {
+      await prisma.personalChatSession.update({
+        where: { userId: user.id },
+        data: { messages: JSON.stringify(messages) },
+      });
+    } else {
+      session = await prisma.personalChatSession.create({
+        data: { userId: user.id, messages: JSON.stringify(messages) },
+      });
+    }
+
+    res.json({ content: result.content, messages });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message || 'AI request failed' });
   }
-
-  res.json({ content: result.content, messages });
 });
 
 router.delete('/chat', requireAuth, async (req, res) => {

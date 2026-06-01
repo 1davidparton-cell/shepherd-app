@@ -32,6 +32,7 @@ router.post('/sessions', requireAuth, async (req, res) => {
 });
 
 router.post('/sessions/:id/message', requireAuth, async (req, res) => {
+  const user = req.user as { id: string };
   const { content, contextId } = req.body;
 
   const session = await prisma.chatSession.findUnique({ where: { id: req.params.id } });
@@ -40,7 +41,6 @@ router.post('/sessions/:id/message', requireAuth, async (req, res) => {
   const messages: Message[] = JSON.parse(session.messages);
   messages.push({ role: 'user', content });
 
-  // Build context: disciple info + all their submitted responses
   let contextInfo = '';
   if (contextId) {
     const subject = await prisma.user.findUnique({
@@ -71,16 +71,18 @@ router.post('/sessions/:id/message', requireAuth, async (req, res) => {
   }
 
   const systemPrompt = buildSystemPrompt('counselor', '', contextInfo);
-  const result = await route('homework_builder', systemPrompt, messages);
 
-  messages.push({ role: 'assistant', content: result.content });
-
-  await prisma.chatSession.update({
-    where: { id: session.id },
-    data: { messages: JSON.stringify(messages) },
-  });
-
-  res.json({ content: result.content, messages });
+  try {
+    const result = await route('homework_builder', systemPrompt, messages, user.id);
+    messages.push({ role: 'assistant', content: result.content });
+    await prisma.chatSession.update({
+      where: { id: session.id },
+      data: { messages: JSON.stringify(messages) },
+    });
+    res.json({ content: result.content, messages });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message || 'AI request failed' });
+  }
 });
 
 router.delete('/sessions/:id', requireAuth, async (req, res) => {

@@ -18,9 +18,11 @@ router.post('/seek', requireAuth, async (req, res) => {
   }
 
   const systemPrompt = buildScriptureQueryPrompt(user.role);
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: { counselorId: true } });
+  const keyOwnerId = fullUser?.counselorId || user.id;
   const result = await route('scripture_query', systemPrompt, [
     { role: 'user', content: input.trim() },
-  ]);
+  ], keyOwnerId);
 
   const parsed = parseFieldManualOutput(result.content);
 

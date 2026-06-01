@@ -28,10 +28,10 @@ export interface RouteResult {
   content: string;
 }
 
-async function getAdminKey(): Promise<{ provider: string; apiKey: string; selectedModel?: string | null }> {
-  const settings = await prisma.adminSettings.findFirst();
+async function getAdminKey(userId: string): Promise<{ provider: string; apiKey: string; selectedModel?: string | null }> {
+  const settings = await prisma.adminSettings.findUnique({ where: { userId } });
   if (!settings || !settings.encryptedApiKey) {
-    throw new Error('No AI provider API key configured. Please set one in Admin Settings.');
+    throw new Error('No AI provider API key configured. Go to Admin → Settings and add your Anthropic API key.');
   }
   const apiKey = decrypt(settings.encryptedApiKey);
   return { provider: settings.aiProvider, apiKey, selectedModel: settings.selectedModel };
@@ -95,8 +95,9 @@ export async function route(
   task: ModelTask,
   systemPrompt: string,
   messages: Message[],
+  userId: string,
 ): Promise<RouteResult> {
-  const { provider, apiKey, selectedModel } = await getAdminKey();
+  const { provider, apiKey, selectedModel } = await getAdminKey(userId);
 
   let content: string;
 
