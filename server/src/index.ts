@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
+import FileStore from 'session-file-store';
 import passport from 'passport';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -9,6 +10,7 @@ export const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const SessionFileStore = FileStore(session);
 
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -18,6 +20,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 app.use(session({
+  store: new SessionFileStore({
+    path: './sessions',
+    ttl: 7 * 24 * 60 * 60,
+    retries: 0,
+    logFn: () => {},
+  }),
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,

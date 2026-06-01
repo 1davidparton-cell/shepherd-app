@@ -183,7 +183,7 @@
   display:flex;align-items:flex-end;justify-content:space-between;}
 .ad-head .ht{font-family:var(--head);font-size:30px;font-weight:600;color:var(--navy);margin:0;letter-spacing:.005em;}
 .ad-head .hs{font-family:'Inter';font-size:13.5px;color:var(--stone);margin:7px 0 0;}
-.ad-body{padding:30px 40px;overflow:hidden;flex:1;}
+.ad-body{padding:30px 40px;overflow-y:auto;flex:1;}
 .btn-primary{background:var(--navy);color:#fff;border:none;cursor:pointer;font-family:'Inter';
   font-size:13.5px;font-weight:600;padding:11px 18px;border-radius:9px;display:inline-flex;
   align-items:center;gap:8px;box-shadow:0 2px 5px -2px rgba(26,39,68,.4);}
@@ -229,6 +229,11 @@
 .ac-person .tx .sn{font-size:12.5px;color:#8b8576;margin-top:3px;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;}
 .ac-person .tx .rl{font-size:11px;color:var(--stone);letter-spacing:.04em;}
+.ac-edit-btn{flex:0 0 auto;align-self:center;display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:8px;border:1px solid transparent;background:transparent;
+  color:#c5bbaa;cursor:pointer;transition:all .15s;}
+.ac-person:hover .ac-edit-btn{color:var(--stone);border-color:#e2d9cb;}
+.ac-edit-btn:hover{background:#ede7da !important;color:var(--navy) !important;border-color:#d6cdbf !important;}
 .ac-panel{flex:1;display:flex;flex-direction:column;background:#f5f1ea;min-width:0;}
 .ac-phead{padding:18px 26px;border-bottom:1px solid #e9e2d6;background:#fbf8f2;display:flex;
   align-items:center;justify-content:space-between;}

@@ -1,17 +1,26 @@
 import { Router } from 'express';
-import { requireAdmin, requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { prisma } from '../index';
 
 const router = Router();
 
-router.get('/', requireAdmin, async (_req, res) => {
+const REL_MIRROR: Record<string, string> = {
+  spouse: 'spouse',
+  sibling: 'sibling',
+  parent: 'child',
+  child: 'parent',
+};
+
+router.get('/', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
   const users = await prisma.user.findMany({
+    where: { counselorId: me.id },
     orderBy: { createdAt: 'desc' },
     include: {
-      coupleAsHusband: { include: { wife: true } },
-      coupleAsWife: { include: { husband: true } },
-      discipleRelationship: { include: { counselor: true } },
       assignedHomework: { select: { id: true, completedAt: true } },
+      _count: { select: { disciples: true } },
+      relationsFrom: { include: { to: { select: { id: true, name: true } } } },
+      relationsTo:   { include: { from: { select: { id: true, name: true } } } },
     },
   });
   res.json(users.map(u => ({
@@ -20,64 +29,148 @@ router.get('/', requireAdmin, async (_req, res) => {
       total: u.assignedHomework.length,
       completed: u.assignedHomework.filter(h => h.completedAt).length,
     },
+    relationships: [
+      ...u.relationsFrom.map(r => ({ id: r.id, type: r.type, person: r.to })),
+      ...u.relationsTo.map(r => ({ id: r.id, type: REL_MIRROR[r.type] ?? r.type, person: r.from })),
+    ],
     assignedHomework: undefined,
+    relationsFrom: undefined,
+    relationsTo: undefined,
   })));
 });
 
-router.post('/', requireAdmin, async (req, res) => {
-  const { name, email, role, notes, couplePartnerId, counselorId } = req.body;
+router.post('/', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { name, email, role, notes, linkToId, linkType } = req.body;
 
-  if (!name || !email || !role) {
-    res.status(400).json({ error: 'name, email, and role are required' });
+  if (!name || !email) {
+    res.status(400).json({ error: 'name and email are required' });
     return;
   }
 
-  const user = await prisma.user.create({
-    data: { googleId: `pending-${Date.now()}`, name, email, role, notes },
-  });
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    let userId: string;
 
-  if (role === 'husband' && couplePartnerId) {
-    await prisma.couple.create({
-      data: { husbandId: user.id, wifeId: couplePartnerId, counselorId: counselorId || req.user!['id' as keyof typeof req.user] as string },
-    });
-  } else if (role === 'wife' && couplePartnerId) {
-    await prisma.couple.create({
-      data: { husbandId: couplePartnerId, wifeId: user.id, counselorId: counselorId || req.user!['id' as keyof typeof req.user] as string },
-    });
-  } else if ((role === 'male_disciple' || role === 'female_disciple') && counselorId) {
-    await prisma.discipleRelationship.create({
-      data: { discipleId: user.id, counselorId },
-    });
+    if (existing) {
+      if (existing.counselorId) {
+        res.status(409).json({ error: 'This person already has a counselor in Shepherd.' });
+        return;
+      }
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { counselorId: me.id, role: role || existing.role, notes },
+      });
+      userId = existing.id;
+    } else {
+      const user = await prisma.user.create({
+        data: { name, email, role: role || 'disciple', notes, counselorId: me.id },
+      });
+      userId = user.id;
+    }
+
+    if (linkToId && linkType && REL_MIRROR[linkType]) {
+      const mirror = REL_MIRROR[linkType];
+      await Promise.allSettled([
+        prisma.userRelationship.upsert({
+          where: { fromId_toId: { fromId: userId, toId: linkToId } },
+          create: { fromId: userId, toId: linkToId, type: linkType },
+          update: { type: linkType },
+        }),
+        prisma.userRelationship.upsert({
+          where: { fromId_toId: { fromId: linkToId, toId: userId } },
+          create: { fromId: linkToId, toId: userId, type: mirror },
+          update: { type: mirror },
+        }),
+      ]);
+    }
+
+    const result = await prisma.user.findUnique({ where: { id: userId } });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/:id/relationships', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { toId, type } = req.body;
+  const fromId = req.params.id;
+
+  const subject = await prisma.user.findUnique({ where: { id: fromId } });
+  if (!subject || subject.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+  const target = await prisma.user.findUnique({ where: { id: toId } });
+  if (!target || target.counselorId !== me.id) {
+    res.status(403).json({ error: 'Target is not your disciple' });
+    return;
+  }
+  if (!REL_MIRROR[type]) {
+    res.status(400).json({ error: 'Invalid relationship type' });
+    return;
   }
 
-  res.status(201).json(user);
-});
+  const mirror = REL_MIRROR[type];
+  await Promise.allSettled([
+    prisma.userRelationship.upsert({
+      where: { fromId_toId: { fromId, toId } },
+      create: { fromId, toId, type },
+      update: { type },
+    }),
+    prisma.userRelationship.upsert({
+      where: { fromId_toId: { fromId: toId, toId: fromId } },
+      create: { fromId: toId, toId: fromId, type: mirror },
+      update: { type: mirror },
+    }),
+  ]);
 
-router.put('/:id', requireAdmin, async (req, res) => {
-  const { name, email, role, notes } = req.body;
-  const user = await prisma.user.update({
-    where: { id: req.params.id },
-    data: { name, email, role, notes },
-  });
-  res.json(user);
-});
-
-router.delete('/:id', requireAdmin, async (req, res) => {
-  await prisma.user.delete({ where: { id: req.params.id } });
   res.json({ success: true });
 });
 
-router.get('/profile', requireAuth, async (req, res) => {
-  const user = req.user as { id: string };
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: {
-      coupleAsHusband: { include: { wife: { select: { id: true, name: true } }, counselor: { select: { id: true, name: true } } } },
-      coupleAsWife: { include: { husband: { select: { id: true, name: true } }, counselor: { select: { id: true, name: true } } } },
-      discipleRelationship: { include: { counselor: { select: { id: true, name: true } } } },
-    },
+router.delete('/:id/relationships/:toId', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { id: fromId, toId } = req.params;
+
+  const subject = await prisma.user.findUnique({ where: { id: fromId } });
+  if (!subject || subject.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+
+  await Promise.allSettled([
+    prisma.userRelationship.deleteMany({ where: { fromId, toId } }),
+    prisma.userRelationship.deleteMany({ where: { fromId: toId, toId: fromId } }),
+  ]);
+
+  res.json({ success: true });
+});
+
+router.put('/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { name, email, role, notes } = req.body;
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!user || user.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+  const updated = await prisma.user.update({
+    where: { id: req.params.id },
+    data: { name, email, role, notes },
   });
-  res.json(profile);
+  res.json(updated);
+});
+
+router.delete('/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!user || user.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+  await prisma.user.delete({ where: { id: req.params.id } });
+  res.json({ success: true });
 });
 
 export default router;

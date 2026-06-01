@@ -5,26 +5,18 @@ import { decrypt } from '../lib/encryption';
 import { prisma } from '../index';
 
 export type ModelTask =
-  | 'wife_personal_chat'
-  | 'husband_personal_chat'
-  | 'female_disciple_personal_chat'
-  | 'male_disciple_personal_chat'
-  | 'admin_counselor_chat'
+  | 'personal_chat'
+  | 'homework_builder'
   | 'homework_synthesis'
-  | 'couple_comparison'
-  | 'interview_question_generation'
   | 'scripture_query';
 
+const HAIKU = 'claude-haiku-4-5';
+
 const ANTHROPIC_MODEL_MAP: Record<ModelTask, string> = {
-  wife_personal_chat: 'claude-opus-4-5',
-  husband_personal_chat: 'claude-opus-4-5',
-  female_disciple_personal_chat: 'claude-opus-4-5',
-  male_disciple_personal_chat: 'claude-opus-4-5',
-  admin_counselor_chat: 'claude-sonnet-4-5',
-  homework_synthesis: 'claude-opus-4-5',
-  couple_comparison: 'claude-opus-4-5',
-  interview_question_generation: 'claude-sonnet-4-5',
-  scripture_query: 'claude-opus-4-5',
+  personal_chat:      HAIKU,
+  homework_builder:   HAIKU,
+  homework_synthesis: HAIKU,
+  scripture_query:    HAIKU,
 };
 
 export interface Message {

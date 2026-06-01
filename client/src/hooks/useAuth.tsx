@@ -4,7 +4,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'husband' | 'wife' | 'male_disciple' | 'female_disciple';
+  role: string;
+  counselorId: string | null;
+  _count: { disciples: number };
 }
 
 interface AuthContextType {

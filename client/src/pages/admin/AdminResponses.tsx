@@ -14,11 +14,9 @@ function initials(name: string) {
 }
 
 const AVATAR_COLORS: Record<string, string> = {
-  husband: '#1e3a5f',
-  wife: '#5f3a1e',
-  male_disciple: '#1e4a3a',
-  female_disciple: '#4a1e3a',
-  admin: '#3a3a3a',
+  disciple:     '#3a3a5f',
+  co_counselor: '#1e4a3a',
+  counselor:    '#1a2744',
 };
 
 export default function AdminResponses() {
@@ -69,7 +67,7 @@ export default function AdminResponses() {
                 {initials(group.name)}
               </div>
               <b>{group.name}</b>
-              <span>{group.role.replace('_', ' ')}</span>
+              <span>{{ disciple: 'Disciple', co_counselor: 'Co-counselor', counselor: 'Counselor' }[group.role] ?? group.role}</span>
               <button
                 className={synthesizing === userId ? 'btn-ghost' : 'btn-primary'}
                 onClick={() => synthesize(userId)}

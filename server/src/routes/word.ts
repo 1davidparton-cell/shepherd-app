@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAuth, requireAdmin } from '../middleware/auth';
 import { route } from '../services/modelRouter';
-import { requireAdmin } from '../middleware/auth';
 import { buildScriptureQueryPrompt } from '../services/systemPrompts';
 import { parseFieldManualOutput } from '../lib/scriptureParser';
 import { fetchPassage, isValidReference } from '../lib/bibleService';

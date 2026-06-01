@@ -96,7 +96,7 @@ export default function AdminSettings() {
 
           <div className="fsec">
             <div className="fst">AI Provider</div>
-            <div className="fsd">Choose the language model powering Shepherd's counseling assistance.</div>
+            <div className="fsd">Choose the language model powering Shepherd's discipling assistance.</div>
 
             <div className="seg">
               {PROVIDERS.map(p => (
@@ -112,7 +112,7 @@ export default function AdminSettings() {
 
             {selectedProvider === 'anthropic' && (
               <p style={{ fontSize: '0.8rem', color: 'var(--stone)', marginTop: 8 }}>
-                Models are assigned automatically per task type.
+                Using <strong>Claude Haiku</strong> — Anthropic's fastest, most affordable model. Optimized for conversation.
               </p>
             )}
           </div>

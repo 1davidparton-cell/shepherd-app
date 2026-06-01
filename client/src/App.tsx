@@ -15,7 +15,7 @@ import PortalHomework from './pages/portal/PortalHomework';
 import PortalScripture from './pages/portal/PortalScripture';
 import PortalWord from './pages/portal/PortalWord';
 
-function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -25,15 +25,23 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/portal" replace />;
+  return <>{children}</>;
+}
+
+function RequireDisciple({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.counselorId) return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }
 
 function RoleRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
-  return <Navigate to="/portal" replace />;
+  if (user.role === 'counselor' || user._count.disciples > 0) return <Navigate to="/admin" replace />;
+  if (user.counselorId) return <Navigate to="/portal" replace />;
+  return <Navigate to="/admin" replace />;
 }
 
 export default function App() {
@@ -43,7 +51,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<ProtectedRoute><RoleRouter /></ProtectedRoute>} />
 
-        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="settings" element={<AdminSettings />} />
@@ -52,7 +60,7 @@ export default function App() {
           <Route path="responses" element={<AdminResponses />} />
         </Route>
 
-        <Route path="/portal" element={<ProtectedRoute><PortalLayout /></ProtectedRoute>}>
+        <Route path="/portal" element={<RequireDisciple><PortalLayout /></RequireDisciple>}>
           <Route index element={<PortalHome />} />
           <Route path="chat" element={<PortalChat />} />
           <Route path="homework" element={<PortalHomework />} />

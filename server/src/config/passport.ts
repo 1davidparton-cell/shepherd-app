@@ -6,28 +6,52 @@ passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   callbackURL: '/auth/google/callback',
-}, async (_accessToken, _refreshToken, profile, done) => {
+  passReqToCallback: true,
+}, async (req, _accessToken, _refreshToken, profile, done) => {
   try {
     const email = profile.emails?.[0]?.value;
     if (!email) return done(new Error('No email from Google'));
 
-    const user = await prisma.user.findFirst({
-      where: { OR: [{ googleId: profile.id }, { email }] },
+    const loginType: string = ((req.session as unknown) as Record<string, unknown>).loginType as string || 'counselor';
+
+    if (loginType === 'counselor') {
+      const existing = await prisma.user.findFirst({
+        where: { OR: [{ googleId: profile.id }, { email }] },
+      });
+
+      if (existing) {
+        const updated = existing.googleId ? existing : await prisma.user.update({
+          where: { id: existing.id },
+          data: { googleId: profile.id },
+        });
+        return done(null, updated);
+      }
+
+      const created = await prisma.user.create({
+        data: {
+          googleId: profile.id,
+          name: profile.displayName || email,
+          email,
+          role: 'counselor',
+        },
+      });
+      return done(null, created);
+    }
+
+    // disciple login
+    const disciple = await prisma.user.findFirst({
+      where: { email, counselorId: { not: null } },
     });
 
-    if (!user) {
-      return done(null, false, { message: 'Account not found. Contact your counselor to be added.' });
+    if (!disciple) {
+      return done(null, false, { message: 'account_not_found' });
     }
 
-    if (!user.googleId) {
-      const updated = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId: profile.id },
-      });
-      return done(null, updated);
-    }
-
-    return done(null, user);
+    const updated = disciple.googleId ? disciple : await prisma.user.update({
+      where: { id: disciple.id },
+      data: { googleId: profile.id },
+    });
+    return done(null, updated);
   } catch (err) {
     return done(err as Error);
   }
@@ -39,7 +63,12 @@ passport.serializeUser((user: Express.User, done) => {
 
 passport.deserializeUser(async (id: string, done) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { disciples: true } },
+      },
+    });
     done(null, user);
   } catch (err) {
     done(err);

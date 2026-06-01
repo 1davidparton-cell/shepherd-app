@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireAdmin } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { route, Message } from '../services/modelRouter';
 import { buildSystemPrompt } from '../services/systemPrompts';
 import { prisma } from '../index';
 
 const router = Router();
 
-router.get('/sessions', requireAdmin, async (req, res) => {
+router.get('/sessions', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
   const sessions = await prisma.chatSession.findMany({
     where: { counselorId: user.id },
@@ -16,13 +16,13 @@ router.get('/sessions', requireAdmin, async (req, res) => {
   res.json(sessions.map(s => ({ ...s, messages: JSON.parse(s.messages) })));
 });
 
-router.get('/sessions/:id', requireAdmin, async (req, res) => {
+router.get('/sessions/:id', requireAuth, async (req, res) => {
   const session = await prisma.chatSession.findUnique({ where: { id: req.params.id } });
   if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
   res.json({ ...session, messages: JSON.parse(session.messages) });
 });
 
-router.post('/sessions', requireAdmin, async (req, res) => {
+router.post('/sessions', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
   const { contextId } = req.body;
   const session = await prisma.chatSession.create({
@@ -31,8 +31,8 @@ router.post('/sessions', requireAdmin, async (req, res) => {
   res.status(201).json({ ...session, messages: [] });
 });
 
-router.post('/sessions/:id/message', requireAdmin, async (req, res) => {
-  const { content, contextType, contextId } = req.body;
+router.post('/sessions/:id/message', requireAuth, async (req, res) => {
+  const { content, contextId } = req.body;
 
   const session = await prisma.chatSession.findUnique({ where: { id: req.params.id } });
   if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
@@ -40,40 +40,38 @@ router.post('/sessions/:id/message', requireAdmin, async (req, res) => {
   const messages: Message[] = JSON.parse(session.messages);
   messages.push({ role: 'user', content });
 
-  let sessionNotes = '';
+  // Build context: disciple info + all their submitted responses
   let contextInfo = '';
-
   if (contextId) {
-    const notes = await prisma.sessionNote.findMany({
-      where: contextType === 'couple'
-        ? { coupleId: contextId }
-        : { subjectId: contextId },
-      orderBy: { createdAt: 'desc' },
-    });
-    sessionNotes = notes.map(n => n.content).join('\n\n');
-  }
-
-  if (contextType === 'couple' && contextId) {
-    const couple = await prisma.couple.findUnique({
-      where: { id: contextId },
-      include: {
-        husband: { select: { name: true } },
-        wife: { select: { name: true } },
-      },
-    });
-    if (couple) {
-      contextInfo = `Couple: ${couple.husband.name} (husband) and ${couple.wife.name} (wife)`;
-    }
-  } else if (contextId) {
     const subject = await prisma.user.findUnique({
       where: { id: contextId },
-      select: { name: true, role: true },
+      select: { name: true, role: true, notes: true },
     });
-    if (subject) contextInfo = `Counselee: ${subject.name} (${subject.role})`;
+    if (subject) {
+      contextInfo = `Disciple: ${subject.name} (${subject.role})`;
+      if (subject.notes) contextInfo += `\nNotes: ${subject.notes}`;
+    }
+
+    const homework = await prisma.homework.findMany({
+      where: { assignedToId: contextId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: { responses: { orderBy: { submittedAt: 'asc' } } },
+    });
+
+    if (homework.length > 0) {
+      const hwSummary = homework.map(h => {
+        const responses = h.responses.map((r, i) =>
+          `  Response ${i + 1} (${new Date(r.submittedAt).toLocaleDateString()}): ${r.responseText}`
+        ).join('\n');
+        return `Assignment: ${h.title}${h.scriptureRef ? ` [${h.scriptureRef}]` : ''}\n${h.instructions}\n${responses || '  (no responses yet)'}`;
+      }).join('\n\n');
+      contextInfo += `\n\nHomework history:\n${hwSummary}`;
+    }
   }
 
-  const systemPrompt = buildSystemPrompt('admin', sessionNotes, contextInfo);
-  const result = await route('admin_counselor_chat', systemPrompt, messages);
+  const systemPrompt = buildSystemPrompt('counselor', '', contextInfo);
+  const result = await route('homework_builder', systemPrompt, messages);
 
   messages.push({ role: 'assistant', content: result.content });
 
@@ -85,7 +83,7 @@ router.post('/sessions/:id/message', requireAdmin, async (req, res) => {
   res.json({ content: result.content, messages });
 });
 
-router.delete('/sessions/:id', requireAdmin, async (req, res) => {
+router.delete('/sessions/:id', requireAuth, async (req, res) => {
   await prisma.chatSession.delete({ where: { id: req.params.id } });
   res.json({ success: true });
 });

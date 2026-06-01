@@ -43,13 +43,7 @@ router.post('/chat/message', requireAuth, async (req, res) => {
   const context = recentResponses ? `Recent homework responses:\n${recentResponses}` : '';
   const systemPrompt = buildSystemPrompt(user.role, sessionNotes, context);
 
-  const taskMap: Record<string, ModelTask> = {
-    wife: 'wife_personal_chat',
-    husband: 'husband_personal_chat',
-    female_disciple: 'female_disciple_personal_chat',
-    male_disciple: 'male_disciple_personal_chat',
-  };
-  const task = taskMap[user.role] || 'admin_counselor_chat';
+  const task: ModelTask = 'personal_chat';
 
   const result = await route(task, systemPrompt, messages);
   messages.push({ role: 'assistant', content: result.content });

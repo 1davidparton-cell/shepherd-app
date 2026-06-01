@@ -1,25 +1,33 @@
 import { Router } from 'express';
-import { requireAdmin } from '../middleware/auth';
-import { route } from '../services/modelRouter';
-import { buildSystemPrompt } from '../services/systemPrompts';
+import { requireAuth } from '../middleware/auth';
 import { prisma } from '../index';
 
 const router = Router();
 
-router.get('/dashboard', requireAdmin, async (_req, res) => {
-  const [userCount, pendingHomework, recentNotes] = await Promise.all([
-    prisma.user.count({ where: { role: { not: 'admin' } } }),
-    prisma.homework.count({ where: { completedAt: null } }),
-    prisma.sessionNote.findMany({ orderBy: { createdAt: 'desc' }, take: 5, include: { counselor: { select: { name: true } } } }),
+router.get('/dashboard', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const [discipleCount, pendingHomework, recentNotes] = await Promise.all([
+    prisma.user.count({ where: { counselorId: me.id } }),
+    prisma.homework.count({ where: { assignedById: me.id, completedAt: null } }),
+    prisma.sessionNote.findMany({
+      where: { counselorId: me.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { counselor: { select: { name: true } } },
+    }),
   ]);
-  res.json({ userCount, pendingHomework, recentNotes });
+  res.json({ userCount: discipleCount, pendingHomework, recentNotes });
 });
 
-router.get('/responses', requireAdmin, async (req, res) => {
-  const { userId } = req.query;
-  const where = userId ? { userId: userId as string } : {};
+router.get('/responses', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const disciples = await prisma.user.findMany({
+    where: { counselorId: me.id },
+    select: { id: true },
+  });
+  const discipleIds = disciples.map(d => d.id);
   const responses = await prisma.homeworkResponse.findMany({
-    where,
+    where: { userId: { in: discipleIds } },
     orderBy: { submittedAt: 'desc' },
     include: {
       homework: { select: { title: true, scriptureRef: true } },
@@ -29,127 +37,76 @@ router.get('/responses', requireAdmin, async (req, res) => {
   res.json(responses);
 });
 
-router.post('/responses/synthesize', requireAdmin, async (req, res) => {
+router.post('/responses/synthesize', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
   const { userId } = req.body;
+
+  const disciple = await prisma.user.findFirst({ where: { id: userId, counselorId: me.id } });
+  if (!disciple) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
 
   const responses = await prisma.homeworkResponse.findMany({
     where: { userId },
+    include: { homework: { select: { title: true, scriptureRef: true } } },
     orderBy: { submittedAt: 'desc' },
     take: 10,
-    include: { homework: { select: { title: true, scriptureRef: true } } },
   });
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, role: true } });
-  if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+  if (!responses.length) {
+    res.json({ synthesis: 'No responses to synthesize yet.' });
+    return;
+  }
 
-  const responseText = responses
-    .map(r => `Assignment: ${r.homework.title}\nResponse: ${r.responseText}`)
-    .join('\n\n---\n\n');
-
-  const systemPrompt = buildSystemPrompt('admin');
-  const { content } = await route('homework_synthesis', systemPrompt, [{
-    role: 'user',
-    content: `Synthesize the following homework responses from ${user.name} (${user.role}). Identify key themes, areas of growth, concerning patterns, and suggested next steps for counseling.\n\n${responseText}`,
-  }]);
-
-  res.json({ synthesis: content });
+  const { getAIService } = await import('../services/ai');
+  const ai = await getAIService(me.id);
+  const prompt = `You are a biblical counselor reviewing homework responses from ${disciple.name}. Synthesize the following responses into a brief pastoral summary (3-4 sentences) highlighting themes, growth areas, and prayer points:\n\n${responses.map(r => `Q: ${r.homework.title}\nA: ${r.responseText}`).join('\n\n')}`;
+  const synthesis = await ai.complete(prompt);
+  res.json({ synthesis });
 });
 
-router.post('/responses/compare-couple', requireAdmin, async (req, res) => {
-  const { coupleId } = req.body;
-
-  const couple = await prisma.couple.findUnique({
-    where: { id: coupleId },
-    include: {
-      husband: { select: { id: true, name: true } },
-      wife: { select: { id: true, name: true } },
-    },
-  });
-  if (!couple) { res.status(404).json({ error: 'Couple not found' }); return; }
-
-  const [husbandResponses, wifeResponses] = await Promise.all([
-    prisma.homeworkResponse.findMany({
-      where: { userId: couple.husbandId },
-      orderBy: { submittedAt: 'desc' },
-      take: 5,
-      include: { homework: { select: { title: true } } },
-    }),
-    prisma.homeworkResponse.findMany({
-      where: { userId: couple.wifeId },
-      orderBy: { submittedAt: 'desc' },
-      take: 5,
-      include: { homework: { select: { title: true } } },
-    }),
-  ]);
-
-  const prompt = `Compare these homework responses from a married couple and identify where they are agreeing, diverging, or showing patterns. Frame the marriage as a covenant worth fighting for.
-
-HUSBAND (${couple.husband.name}):
-${husbandResponses.map(r => `${r.homework.title}: ${r.responseText}`).join('\n\n')}
-
-WIFE (${couple.wife.name}):
-${wifeResponses.map(r => `${r.homework.title}: ${r.responseText}`).join('\n\n')}`;
-
-  const systemPrompt = buildSystemPrompt('admin');
-  const { content } = await route('couple_comparison', systemPrompt, [{ role: 'user', content: prompt }]);
-
-  res.json({ comparison: content });
-});
-
-router.get('/session-notes', requireAdmin, async (req, res) => {
-  const { subjectId, coupleId } = req.query;
-  const where: Record<string, string> = {};
-  if (subjectId) where.subjectId = subjectId as string;
-  if (coupleId) where.coupleId = coupleId as string;
-
+router.get('/session-notes', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
   const notes = await prisma.sessionNote.findMany({
-    where,
+    where: { counselorId: me.id },
     orderBy: { createdAt: 'desc' },
     include: { counselor: { select: { name: true } } },
   });
   res.json(notes);
 });
 
-router.post('/session-notes', requireAdmin, async (req, res) => {
-  const user = req.user as { id: string };
-  const { content, subjectId, coupleId } = req.body;
-
+router.post('/session-notes', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { content, subjectId } = req.body;
   const note = await prisma.sessionNote.create({
-    data: { counselorId: user.id, content, subjectId, coupleId },
+    data: { counselorId: me.id, content, subjectId },
     include: { counselor: { select: { name: true } } },
   });
   res.status(201).json(note);
 });
 
-router.put('/session-notes/:id', requireAdmin, async (req, res) => {
-  const note = await prisma.sessionNote.update({
-    where: { id: req.params.id },
-    data: { content: req.body.content },
-  });
-  res.json(note);
+router.put('/session-notes/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { content } = req.body;
+  const note = await prisma.sessionNote.findUnique({ where: { id: req.params.id } });
+  if (!note || note.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your note' });
+    return;
+  }
+  const updated = await prisma.sessionNote.update({ where: { id: req.params.id }, data: { content } });
+  res.json(updated);
 });
 
-router.delete('/session-notes/:id', requireAdmin, async (req, res) => {
+router.delete('/session-notes/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const note = await prisma.sessionNote.findUnique({ where: { id: req.params.id } });
+  if (!note || note.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your note' });
+    return;
+  }
   await prisma.sessionNote.delete({ where: { id: req.params.id } });
   res.json({ success: true });
-});
-
-router.post('/generate-questions', requireAdmin, async (req, res) => {
-  const { context, subjectId } = req.body;
-
-  let subjectInfo = '';
-  if (subjectId) {
-    const user = await prisma.user.findUnique({ where: { id: subjectId }, select: { name: true, role: true } });
-    if (user) subjectInfo = `Subject: ${user.name} (${user.role})`;
-  }
-
-  const systemPrompt = buildSystemPrompt('admin');
-  const { content } = await route('interview_question_generation', systemPrompt, [{
-    role: 'user',
-    content: `Generate 5 root-cause assessment questions for a biblical counseling session. ${subjectInfo} Context: ${context}`,
-  }]);
-
-  res.json({ questions: content });
 });
 
 export default router;

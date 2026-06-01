@@ -8,56 +8,47 @@ interface UserRecord {
   role: string;
   notes: string | null;
   createdAt: string;
+  counselorId: string | null;
+  _count: { disciples: number };
   homeworkStats: { total: number; completed: number };
 }
 
-const ROLES = ['husband', 'wife', 'male_disciple', 'female_disciple'];
 const ROLE_LABELS: Record<string, string> = {
-  husband: 'Husband', wife: 'Wife',
-  male_disciple: 'Male Disciple', female_disciple: 'Female Disciple', admin: 'Admin',
+  disciple:     'Disciple',
+  co_counselor: 'Co-counselor',
+  counselor:    'Counselor',
 };
+
+const DISPLAY_ROLES = ['disciple', 'co_counselor', 'counselor'];
 
 const AVATAR_COLORS: Record<string, string> = {
-  husband: '#1e3a5f',
-  wife: '#5f3a1e',
-  male_disciple: '#1e4a3a',
-  female_disciple: '#4a1e3a',
-  admin: '#3a3a3a',
-};
-
-const ROLE_DOT_COLORS: Record<string, string> = {
-  husband: '#1e3a5f',
-  wife: '#5f3a1e',
-  male_disciple: '#1e4a3a',
-  female_disciple: '#4a1e3a',
-  admin: '#3a3a3a',
+  disciple:     '#3a3a5f',
+  co_counselor: '#1e4a3a',
+  counselor:    '#1a2744',
 };
 
 function badgeClass(role: string) {
-  if (role === 'husband' || role === 'wife') return 'badge spouse';
-  if (role === 'admin') return 'badge admin';
+  if (role === 'counselor') return 'badge admin';
+  if (role === 'co_counselor') return 'badge spouse';
   return 'badge disciple';
 }
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRecord[]>([]);
-  const [filter, setFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', role: 'husband', notes: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: 'disciple', notes: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const load = () => api.get<UserRecord[]>('/api/users').then(setUsers).catch(console.error);
   useEffect(() => { load(); }, []);
 
-  const filtered = filter === 'all' ? users.filter(u => u.role !== 'admin') : users.filter(u => u.role === filter);
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setError('');
     try {
       await api.post('/api/users', form);
-      setForm({ name: '', email: '', role: 'husband', notes: '' });
+      setForm({ name: '', email: '', role: 'disciple', notes: '' });
       setShowForm(false);
       load();
     } catch (err) {
@@ -72,28 +63,23 @@ export default function AdminUsers() {
       <div className="ad-head">
         <div>
           <h1 className="ht">People</h1>
-          <p className="hs">Manage counselees and disciples</p>
+          <p className="hs">Your disciples</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(true)}>
-          Add Person
+          Add Disciple
         </button>
       </div>
 
       <div className="ad-body">
-        <div className="ad-filters">
-          {['all', ...ROLES].map(r => (
-            <button
-              key={r}
-              onClick={() => setFilter(r)}
-              className={'fpill' + (filter === r ? ' on' : '')}
-            >
-              {r === 'all' ? 'All' : ROLE_LABELS[r]}
-            </button>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <p style={{ color: 'var(--stone)', fontSize: '0.875rem', padding: '2rem 0', textAlign: 'center' }}>No people found.</p>
+        {users.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            <p style={{ fontFamily: 'var(--head)', fontSize: 18, color: 'var(--stone)', fontStyle: 'italic', margin: '0 0 8px' }}>
+              No disciples yet.
+            </p>
+            <p style={{ fontSize: 13.5, color: '#a89f8e' }}>
+              Add someone by their Google email and they'll be able to sign in as a Disciple.
+            </p>
+          </div>
         ) : (
           <div className="table">
             <div className="thead">
@@ -101,9 +87,9 @@ export default function AdminUsers() {
               <span>Role</span>
               <span>Email</span>
               <span>Homework</span>
-              <span />
+              <span>Disciples</span>
             </div>
-            {filtered.map(u => (
+            {users.map(u => (
               <div key={u.id} className="trow">
                 <div className="tname">
                   <div className="av" style={{ background: AVATAR_COLORS[u.role] ?? '#1e3a5f' }}>
@@ -111,13 +97,15 @@ export default function AdminUsers() {
                   </div>
                   <b>{u.name}</b>
                 </div>
-                <span className={badgeClass(u.role)}>{ROLE_LABELS[u.role]}</span>
+                <span className={badgeClass(u.role)}>{ROLE_LABELS[u.role] ?? u.role}</span>
                 <span className="temail">{u.email}</span>
                 <div className="thw">
-                  <span className="dotp" style={{ background: ROLE_DOT_COLORS[u.role] ?? '#1e3a5f' }} />
+                  <span className="dotp" style={{ background: AVATAR_COLORS[u.role] ?? '#1e3a5f' }} />
                   {u.homeworkStats.completed}/{u.homeworkStats.total}
                 </div>
-                <span className="kebab">⋯</span>
+                <span style={{ fontSize: 13, color: u._count.disciples > 0 ? 'var(--navy)' : '#c6bba7', fontWeight: u._count.disciples > 0 ? 600 : 400 }}>
+                  {u._count.disciples > 0 ? `${u._count.disciples} disciple${u._count.disciples !== 1 ? 's' : ''}` : '—'}
+                </span>
               </div>
             ))}
           </div>
@@ -127,28 +115,36 @@ export default function AdminUsers() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <form onSubmit={submit} className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="font-serif text-lg text-gray-900 mb-4">Add Person</h3>
-            {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-            <div className="space-y-3">
+            <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: '0 0 18px' }}>Add Disciple</h3>
+            {error && <p style={{ color: '#b05050', fontSize: 13.5, marginBottom: 12 }}>{error}</p>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="field">
-                <input className="inp" placeholder="Full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                <label>Full name</label>
+                <input className="inp" placeholder="Anthony Smith" value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
               </div>
               <div className="field">
-                <input className="inp" placeholder="Google email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                <label>Google email</label>
+                <input className="inp" placeholder="anthony@gmail.com" type="email" value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
               </div>
               <div className="field">
-                <select className="inp" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-                  {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                <label>Display role</label>
+                <select className="inp" value={form.role}
+                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+                  {DISPLAY_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r] ?? r}</option>)}
                 </select>
               </div>
               <div className="field">
-                <textarea className="inp" placeholder="Notes (optional)" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                <label>Notes (optional)</label>
+                <textarea className="inp" placeholder="Background, context..." rows={3} value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
-            <div className="flex gap-3 mt-4">
-              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
-              <button type="submit" disabled={saving} className="btn-primary flex-1">
-                {saving ? 'Adding...' : 'Add Person'}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary" style={{ flex: 1 }}>
+                {saving ? 'Adding...' : 'Add Disciple'}
               </button>
             </div>
           </form>

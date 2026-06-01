@@ -8,59 +8,52 @@ datasource db {
 }
 
 model User {
+  id          String   @id @default(cuid())
+  googleId    String?  @unique
+  name        String
+  email       String   @unique
+  role        String   @default("counselor")
+  counselorId String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  counselor User?  @relation("DiscipleTree", fields: [counselorId], references: [id])
+  disciples User[] @relation("DiscipleTree")
+
+  settings          AdminSettings?
+  assignedHomework  Homework[]          @relation("HomeworkAssignedTo")
+  createdHomework   Homework[]          @relation("HomeworkAssignedBy")
+  homeworkResponses HomeworkResponse[]
+  sessionNotes      SessionNote[]       @relation("SessionNotesCounselor")
+  personalChat      PersonalChatSession?
+  adminChatSessions ChatSession[]
+  scriptureQueries  ScriptureQuery[]
+  relationsFrom     UserRelationship[]  @relation("RelFrom")
+  relationsTo       UserRelationship[]  @relation("RelTo")
+}
+
+model UserRelationship {
   id        String   @id @default(cuid())
-  googleId  String   @unique
-  name      String
-  email     String   @unique
-  role      String
-  notes     String?
+  fromId    String
+  toId      String
+  type      String
   createdAt DateTime @default(now())
 
-  coupleAsHusband       Couple?               @relation("CoupleHusband")
-  coupleAsWife          Couple?               @relation("CoupleWife")
-  counseledCouples      Couple[]              @relation("CoupleCounselor")
-  discipleRelationship  DiscipleRelationship? @relation("Disciple")
-  disciplesAsCounselor  DiscipleRelationship[] @relation("Counselor")
-  adminSettings         AdminSettings?
-  assignedHomework      Homework[]            @relation("AssignedTo")
-  createdHomework       Homework[]            @relation("AssignedBy")
-  homeworkResponses     HomeworkResponse[]
-  sessionNotesGiven     SessionNote[]         @relation("SessionNotesCounselor")
-  personalChatSession   PersonalChatSession?
-  adminChatSessions     ChatSession[]
-  scriptureQueries      ScriptureQuery[]
-}
+  from User @relation("RelFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("RelTo", fields: [toId], references: [id], onDelete: Cascade)
 
-model Couple {
-  id          String @id @default(cuid())
-  husbandId   String @unique
-  wifeId      String @unique
-  counselorId String
-
-  husband   User @relation("CoupleHusband", fields: [husbandId], references: [id])
-  wife      User @relation("CoupleWife", fields: [wifeId], references: [id])
-  counselor User @relation("CoupleCounselor", fields: [counselorId], references: [id])
-
-  sessionNotes SessionNote[]
-}
-
-model DiscipleRelationship {
-  id          String @id @default(cuid())
-  discipleId  String @unique
-  counselorId String
-
-  disciple  User @relation("Disciple", fields: [discipleId], references: [id])
-  counselor User @relation("Counselor", fields: [counselorId], references: [id])
+  @@unique([fromId, toId])
 }
 
 model AdminSettings {
   id              String  @id @default(cuid())
-  adminId         String  @unique
+  userId          String  @unique
   aiProvider      String  @default("anthropic")
   encryptedApiKey String?
   selectedModel   String?
 
-  admin User @relation(fields: [adminId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Homework {
@@ -75,8 +68,8 @@ model Homework {
   completedAt  DateTime?
   createdAt    DateTime  @default(now())
 
-  assignedTo User               @relation("AssignedTo", fields: [assignedToId], references: [id])
-  assignedBy User               @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedTo User               @relation("HomeworkAssignedTo", fields: [assignedToId], references: [id])
+  assignedBy User               @relation("HomeworkAssignedBy", fields: [assignedById], references: [id])
   responses  HomeworkResponse[]
 }
 
@@ -95,12 +88,10 @@ model SessionNote {
   id          String   @id @default(cuid())
   counselorId String
   subjectId   String?
-  coupleId    String?
   content     String
   createdAt   DateTime @default(now())
 
-  counselor User    @relation("SessionNotesCounselor", fields: [counselorId], references: [id])
-  couple    Couple? @relation(fields: [coupleId], references: [id])
+  counselor User @relation("SessionNotesCounselor", fields: [counselorId], references: [id])
 }
 
 model ChatSession {

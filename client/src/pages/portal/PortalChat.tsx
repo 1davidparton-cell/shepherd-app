@@ -42,10 +42,8 @@ export default function PortalChat() {
     }
   };
 
-  const isWife = user?.role === 'wife' || user?.role === 'female_disciple';
-
-  const welcomeMessage = isWife
-    ? `This is your personal space. Share what you're carrying — frustration, confusion, grief, questions. I'm here to listen first, and then to walk with you toward what the Lord says in the middle of it.`
+  const welcomeMessage = user?.role === 'co_counselor'
+    ? `This is your shared space. Bring what you're carrying together — questions, tensions, confusion. I'm here to help you think through it and walk toward what the Lord says in the middle of it.`
     : `This is your space to be honest — about struggle, failure, or anything you're facing. I'll receive what you share without condemnation. And I'll be direct with you about what faithfulness looks like from here.`;
 
   if (loading) {
@@ -57,7 +55,7 @@ export default function PortalChat() {
       <div className="chat-scroll" style={{ overflowY: 'auto', flex: 1 }}>
         {messages.length === 0 && (
           <div className="chat-welcome">
-            <p className="cw-label">Your counseling space</p>
+            <p className="cw-label">Your discipling space</p>
             <p className="cw-text">{welcomeMessage}</p>
           </div>
         )}

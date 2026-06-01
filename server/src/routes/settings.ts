@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { requireAdmin } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { encrypt, decrypt } from '../lib/encryption';
 import { prisma } from '../index';
 
 const router = Router();
 
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
-  const settings = await prisma.adminSettings.findUnique({ where: { adminId: user.id } });
+  const settings = await prisma.adminSettings.findUnique({ where: { userId: user.id } });
   res.json({
     aiProvider: settings?.aiProvider || 'anthropic',
     hasApiKey: !!settings?.encryptedApiKey,
@@ -15,7 +15,7 @@ router.get('/', requireAdmin, async (req, res) => {
   });
 });
 
-router.put('/', requireAdmin, async (req, res) => {
+router.put('/', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
   const { aiProvider, apiKey, selectedModel } = req.body;
 
@@ -24,8 +24,8 @@ router.put('/', requireAdmin, async (req, res) => {
   if (apiKey) data.encryptedApiKey = encrypt(apiKey);
 
   const settings = await prisma.adminSettings.upsert({
-    where: { adminId: user.id },
-    create: { adminId: user.id, ...data },
+    where: { userId: user.id },
+    create: { userId: user.id, ...data },
     update: data,
   });
 
@@ -36,9 +36,9 @@ router.put('/', requireAdmin, async (req, res) => {
   });
 });
 
-router.get('/reveal-key', requireAdmin, async (req, res) => {
+router.get('/reveal-key', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
-  const settings = await prisma.adminSettings.findUnique({ where: { adminId: user.id } });
+  const settings = await prisma.adminSettings.findUnique({ where: { userId: user.id } });
   if (!settings?.encryptedApiKey) {
     res.status(404).json({ error: 'No API key stored' });
     return;
@@ -47,9 +47,9 @@ router.get('/reveal-key', requireAdmin, async (req, res) => {
   res.json({ apiKey: key });
 });
 
-router.post('/test-connection', requireAdmin, async (req, res) => {
+router.post('/test-connection', requireAuth, async (req, res) => {
   const user = req.user as { id: string };
-  const settings = await prisma.adminSettings.findUnique({ where: { adminId: user.id } });
+  const settings = await prisma.adminSettings.findUnique({ where: { userId: user.id } });
   if (!settings?.encryptedApiKey) {
     res.status(400).json({ error: 'No API key configured' });
     return;

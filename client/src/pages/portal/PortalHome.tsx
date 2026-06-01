@@ -2,10 +2,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const ROLE_GREETING: Record<string, string> = {
-  wife: 'Welcome back',
-  husband: 'Welcome back',
-  female_disciple: 'Welcome back',
-  male_disciple: 'Welcome back',
+  disciple:     'Welcome back',
+  co_counselor: 'Welcome back',
+  counselor:    'Welcome back',
 };
 
 const CHEVRON = (
