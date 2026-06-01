@@ -19,7 +19,6 @@ const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'];
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [revealedKey, setRevealedKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -112,7 +111,7 @@ export default function AdminSettings() {
             </div>
 
             {selectedProvider === 'anthropic' && (
-              <p style={{ fontSize: '0.8rem', color: 'var(--col-muted)', marginTop: 8 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--stone)', marginTop: 8 }}>
                 Models are assigned automatically per task type.
               </p>
             )}

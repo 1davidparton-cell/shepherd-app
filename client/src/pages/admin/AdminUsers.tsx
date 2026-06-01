@@ -93,7 +93,7 @@ export default function AdminUsers() {
         </div>
 
         {filtered.length === 0 ? (
-          <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', padding: '2rem 0', textAlign: 'center' }}>No people found.</p>
+          <p style={{ color: 'var(--stone)', fontSize: '0.875rem', padding: '2rem 0', textAlign: 'center' }}>No people found.</p>
         ) : (
           <div className="table">
             <div className="thead">

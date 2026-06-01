@@ -62,7 +62,7 @@ export default function AdminDashboard() {
 
         <div className="note-list">
           {data?.recentNotes.length === 0 && (
-            <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', padding: '1rem 0' }}>No session notes yet.</p>
+            <p style={{ color: 'var(--stone)', fontSize: '0.875rem', padding: '1rem 0' }}>No session notes yet.</p>
           )}
           {data?.recentNotes.map(note => (
             <div key={note.id} className="note">

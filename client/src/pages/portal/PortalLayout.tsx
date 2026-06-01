@@ -36,9 +36,9 @@ export default function PortalLayout() {
           )}
           <button
             onClick={handleLogout}
-            style={{ fontSize: 11, color: 'rgba(249,245,239,0.38)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}
+            style={{ fontSize: 10, color: 'rgba(249,245,239,0.38)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 6, letterSpacing: '0.06em' }}
           >
-            out
+            Sign out
           </button>
         </div>
       </header>

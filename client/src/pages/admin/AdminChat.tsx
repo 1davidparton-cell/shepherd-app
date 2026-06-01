@@ -127,7 +127,7 @@ export default function AdminChat() {
 
             <div className="ac-msgs">
               {messages.length === 0 && (
-                <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '2rem 0' }}>
+                <p style={{ color: 'var(--stone)', fontSize: '0.875rem', textAlign: 'center', padding: '2rem 0' }}>
                   Start the counseling session. Ask about their progress, generate questions, or compare responses.
                 </p>
               )}

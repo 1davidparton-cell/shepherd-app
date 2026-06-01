@@ -64,7 +64,7 @@ export default function AdminHomework() {
 
       <div className="ad-body">
         {homework.length === 0 && (
-          <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>No homework assigned yet.</p>
+          <p style={{ color: 'var(--stone)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>No homework assigned yet.</p>
         )}
         <div className="hw-list">
           {homework.map(h => (
@@ -81,7 +81,7 @@ export default function AdminHomework() {
               <span className="st">{h.completedAt ? 'Completed' : 'Pending'}</span>
               <button
                 onClick={() => remove(h.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--col-muted)', marginLeft: 8 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone)', marginLeft: 8 }}
               >
                 ✕
               </button>

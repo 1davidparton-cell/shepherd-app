@@ -57,7 +57,7 @@ export default function AdminResponses() {
 
       <div className="ad-body">
         {responses.length === 0 && (
-          <p style={{ color: 'var(--col-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>
+          <p style={{ color: 'var(--stone)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>
             No responses submitted yet.
           </p>
         )}
