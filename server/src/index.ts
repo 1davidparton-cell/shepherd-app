@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
-import FileStore from 'session-file-store';
+import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 import passport from 'passport';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -10,21 +10,31 @@ export const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const SessionFileStore = FileStore(session);
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://192.168.1.207:5173',
+  ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
+];
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
 }));
 
 app.use(express.json({ limit: '10mb' }));
 
 app.use(session({
-  store: new SessionFileStore({
-    path: './sessions',
-    ttl: 7 * 24 * 60 * 60,
-    retries: 0,
-    logFn: () => {},
+  store: new PrismaSessionStore(prisma, {
+    checkPeriod: 2 * 60 * 1000,
+    dbRecordIdIsSessionId: true,
+    dbRecordIdFunction: undefined,
   }),
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
@@ -32,6 +42,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 }));

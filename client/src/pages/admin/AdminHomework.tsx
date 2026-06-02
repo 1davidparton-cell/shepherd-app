@@ -102,7 +102,12 @@ export default function AdminHomework() {
 
       <div className="ad-body">
         {homework.length === 0 && (
-          <p style={{ color: 'var(--stone)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem 0' }}>No homework assigned yet.</p>
+          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--stone)' }}>
+            <svg width="36" height="36" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" style={{ marginBottom: 12, opacity: 0.4 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <p style={{ fontSize: '0.875rem', margin: 0 }}>No homework assigned yet.</p>
+          </div>
         )}
         <div className="hw-list">
           {homework.map(h => (
@@ -156,6 +161,7 @@ export default function AdminHomework() {
 
               <button
                 onClick={() => remove(h.id)}
+                title="Delete assignment"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1c9bc', fontSize: 18, lineHeight: 1, flexShrink: 0, alignSelf: 'center' }}
               >
                 ✕
@@ -166,7 +172,7 @@ export default function AdminHomework() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) setShowForm(false); }}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) setShowForm(false); }}>
           <form onSubmit={submit} style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', width: '100%', maxWidth: 460, boxShadow: '0 24px 60px -20px rgba(20,25,40,.5)', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: 0 }}>Assign Homework</h3>
             <div className="field">
@@ -195,7 +201,7 @@ export default function AdminHomework() {
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1 }}>Cancel</button>
               <button type="submit" disabled={saving} className="btn-primary" style={{ flex: 2 }}>
-                {saving ? 'Sending…' : 'Assign & Send'}
+                {saving ? '✦ Sending…' : 'Assign & Send'}
               </button>
             </div>
           </form>

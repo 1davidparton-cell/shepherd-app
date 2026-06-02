@@ -69,9 +69,12 @@ export default function PortalHomework() {
       <p className="phw-label">Your Assignments</p>
 
       {homework.length === 0 && (
-        <p style={{ fontSize: 14, color: 'var(--stone)', margin: '4px 2px', fontStyle: 'italic' }}>
-          Nothing assigned yet.
-        </p>
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--stone)' }}>
+          <svg width="36" height="36" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" style={{ marginBottom: 12, opacity: 0.4 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p style={{ fontSize: '0.875rem', margin: 0, fontStyle: 'italic' }}>Nothing assigned yet.</p>
+        </div>
       )}
 
       {homework.map(h => {
