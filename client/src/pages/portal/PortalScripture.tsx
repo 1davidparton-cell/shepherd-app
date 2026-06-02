@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../../lib/api';
+import { api, API_BASE } from '../../lib/api';
 
 interface PassageResult {
   passages: string[];
@@ -50,7 +50,7 @@ export default function PortalScripture() {
   const fetchAudio = async () => {
     const q = query || `${book} ${chapter}`;
     try {
-      const res = await fetch(`/api/portal/scripture/audio?passage=${encodeURIComponent(q)}`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/portal/scripture/audio?passage=${encodeURIComponent(q)}`, { credentials: 'include' });
       if (res.ok) {
         const blob = await res.blob();
         setAudioUrl(URL.createObjectURL(blob));

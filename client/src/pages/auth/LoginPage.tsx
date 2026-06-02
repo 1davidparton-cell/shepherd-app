@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+import { API_BASE } from '../../lib/api';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
