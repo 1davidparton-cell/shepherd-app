@@ -66,6 +66,7 @@ model Homework {
   assignedById String
   dueDate      DateTime?
   completedAt  DateTime?
+  status       String    @default("sent")
   createdAt    DateTime  @default(now())
 
   assignedTo User               @relation("HomeworkAssignedTo", fields: [assignedToId], references: [id])

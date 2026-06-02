@@ -21,6 +21,7 @@ interface Homework {
 export default function PortalHomework() {
   const [homework, setHomework] = useState<Homework[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [viewed, setViewed] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,15 @@ export default function PortalHomework() {
       .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, []);
+
+  const toggle = (id: string) => {
+    const opening = expanded !== id;
+    setExpanded(opening ? id : null);
+    if (opening && !viewed.has(id)) {
+      setViewed(v => new Set([...v, id]));
+      api.post(`/api/homework/${id}/view`, {}).catch(() => {});
+    }
+  };
 
   const submit = async (id: string) => {
     const text = drafts[id]?.trim();
@@ -70,13 +80,22 @@ export default function PortalHomework() {
         return (
           <div key={h.id} className="phw-card" style={{ marginBottom: 12 }}>
             <button
-              onClick={() => setExpanded(isOpen ? null : h.id)}
+              onClick={() => toggle(h.id)}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="t">{h.title}</div>
                 {h.scriptureRef && <div className="ref">{h.scriptureRef}</div>}
-                {h.dueDate && <div className="due">Due {new Date(h.dueDate).toLocaleDateString()}</div>}
+                <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 11.5, color: 'var(--stone)' }}>
+                    Sent {new Date(h.createdAt).toLocaleDateString()}
+                  </div>
+                  {h.dueDate && (
+                    <div style={{ fontSize: 11.5, fontWeight: 600, color: '#92610a' }}>
+                      Due {new Date(h.dueDate).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
               </div>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: hasResponses ? '#2d6a4f' : '#a89f8e', marginLeft: 12, flexShrink: 0, paddingTop: 2 }}>
                 {hasResponses ? `${h.responses.length} submitted` : 'Not started'}

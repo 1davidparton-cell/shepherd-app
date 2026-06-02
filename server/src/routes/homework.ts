@@ -41,12 +41,13 @@ router.post('/', requireAuth, async (req, res) => {
       assignedToId,
       assignedById: me.id,
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      status: 'sent',
     },
     include: { assignedTo: { select: { id: true, name: true, email: true } } },
   });
 
   if (admin && disciple.email) {
-    sendHomeworkEmail({
+    const ok = await sendHomeworkEmail({
       toEmail: disciple.email,
       toDiscipleName: disciple.name.split(' ')[0],
       fromName: admin.name,
@@ -55,9 +56,30 @@ router.post('/', requireAuth, async (req, res) => {
       scriptureRef: scriptureRef || null,
       instructions,
     });
+    if (!ok) {
+      await prisma.homework.update({ where: { id: homework.id }, data: { status: 'failed' } });
+    }
   }
 
   res.status(201).json(homework);
+});
+
+// Admin: update homework status (rejected, etc.)
+router.patch('/:id/status', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { status } = req.body;
+  const VALID = ['sent', 'viewed', 'responded', 'rejected', 'failed'];
+  if (!VALID.includes(status)) {
+    res.status(400).json({ error: 'Invalid status' });
+    return;
+  }
+  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
+  if (!hw || hw.assignedById !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+  const updated = await prisma.homework.update({ where: { id: req.params.id }, data: { status } });
+  res.json(updated);
 });
 
 // Admin: delete homework
@@ -105,6 +127,20 @@ router.get('/my', requireAuth, async (req, res) => {
   res.json(homework);
 });
 
+// Disciple: mark homework as viewed (called when they open it)
+router.post('/:id/view', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
+  if (!hw || hw.assignedToId !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+  if (hw.status === 'sent' || hw.status === 'failed') {
+    await prisma.homework.update({ where: { id: hw.id }, data: { status: 'viewed' } });
+  }
+  res.json({ success: true });
+});
+
 // Disciple: submit a response (can submit multiple times)
 router.post('/:id/respond', requireAuth, async (req, res) => {
   const me = req.user as { id: string };
@@ -119,6 +155,8 @@ router.post('/:id/respond', requireAuth, async (req, res) => {
   const response = await prisma.homeworkResponse.create({
     data: { homeworkId: hw.id, userId: me.id, responseText },
   });
+
+  await prisma.homework.update({ where: { id: hw.id }, data: { status: 'responded' } });
 
   res.status(201).json(response);
 });

@@ -8,25 +8,45 @@ interface HomeworkRecord {
   instructions: string;
   type: string;
   dueDate: string | null;
-  completedAt: string | null;
+  status: string;
   createdAt: string;
   assignedTo: { id: string; name: string; role: string };
+  responses: { id: string; submittedAt: string }[];
 }
 
 interface UserRecord { id: string; name: string; role: string }
 
-const TYPES = ['scripture_reading', 'journaling', 'memory_verse', 'custom'];
+const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  sent:      { label: 'Sent',      color: '#92610a', bg: '#fef3c7' },
+  viewed:    { label: 'Viewed',    color: '#1e4a8a', bg: '#dbeafe' },
+  responded: { label: 'Responded', color: '#166534', bg: '#dcfce7' },
+  rejected:  { label: 'Rejected',  color: '#6b7280', bg: '#f3f4f6' },
+  failed:    { label: 'Send Failed', color: '#991b1b', bg: '#fee2e2' },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const meta = STATUS_META[status] ?? { label: status, color: '#6b7280', bg: '#f3f4f6' };
+  return (
+    <span style={{
+      fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em',
+      padding: '3px 10px', borderRadius: 99,
+      color: meta.color, background: meta.bg,
+    }}>
+      {meta.label}
+    </span>
+  );
+}
 
 export default function AdminHomework() {
   const [homework, setHomework] = useState<HomeworkRecord[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', scriptureRef: '', instructions: '', type: 'scripture_reading', assignedToId: '', dueDate: '' });
+  const [form, setForm] = useState({ title: '', scriptureRef: '', instructions: '', type: 'custom', assignedToId: '', dueDate: '' });
   const [saving, setSaving] = useState(false);
 
   const load = () => Promise.all([
     api.get<HomeworkRecord[]>('/api/homework').then(setHomework),
-    api.get<UserRecord[]>('/api/users').then(u => setUsers(u.filter(x => x.role !== 'admin'))),
+    api.get<UserRecord[]>('/api/users').then(setUsers),
   ]).catch(console.error);
 
   useEffect(() => { load(); }, []);
@@ -36,12 +56,17 @@ export default function AdminHomework() {
     setSaving(true);
     try {
       await api.post('/api/homework', { ...form, dueDate: form.dueDate || undefined });
-      setForm({ title: '', scriptureRef: '', instructions: '', type: 'scripture_reading', assignedToId: '', dueDate: '' });
+      setForm({ title: '', scriptureRef: '', instructions: '', type: 'custom', assignedToId: '', dueDate: '' });
       setShowForm(false);
       load();
     } finally {
       setSaving(false);
     }
+  };
+
+  const setStatus = async (id: string, status: string) => {
+    await api.patch(`/api/homework/${id}/status`, { status });
+    load();
   };
 
   const remove = async (id: string) => {
@@ -55,7 +80,7 @@ export default function AdminHomework() {
       <div className="ad-head">
         <div>
           <h1 className="ht">Homework</h1>
-          <p className="hs">Assign scripture, journaling, and memory work</p>
+          <p className="hs">All assignments and their current status</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(true)}>
           Assign Homework
@@ -68,20 +93,39 @@ export default function AdminHomework() {
         )}
         <div className="hw-list">
           {homework.map(h => (
-            <div key={h.id} className={'ahw' + (h.completedAt ? ' done' : '')}>
-              <div className="dot" />
-              <div className="body">
+            <div key={h.id} className="ahw" style={{ alignItems: 'flex-start', gap: 12 }}>
+              <div className="body" style={{ flex: 1, minWidth: 0 }}>
                 <div className="t">{h.title}</div>
                 {h.scriptureRef && <div className="ref">{h.scriptureRef}</div>}
-                <div className="meta">
-                  Assigned to {h.assignedTo.name}
-                  {h.dueDate && <> · Due {new Date(h.dueDate).toLocaleDateString()}</>}
+                <div className="meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', marginTop: 4 }}>
+                  <span>→ {h.assignedTo.name}</span>
+                  <span>Sent {new Date(h.createdAt).toLocaleDateString()}</span>
+                  {h.dueDate && <span style={{ color: '#92610a', fontWeight: 600 }}>Due {new Date(h.dueDate).toLocaleDateString()}</span>}
+                  {h.responses.length > 0 && <span style={{ color: '#166534' }}>{h.responses.length} response{h.responses.length !== 1 ? 's' : ''}</span>}
                 </div>
               </div>
-              <span className="st">{h.completedAt ? 'Completed' : 'Pending'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                <StatusBadge status={h.status} />
+                {h.status !== 'rejected' && h.status !== 'responded' && (
+                  <button
+                    onClick={() => setStatus(h.id, 'rejected')}
+                    style={{ fontSize: 11, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    Mark rejected
+                  </button>
+                )}
+                {h.status === 'rejected' && (
+                  <button
+                    onClick={() => setStatus(h.id, 'sent')}
+                    style={{ fontSize: 11, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    Restore
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => remove(h.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone)', marginLeft: 8 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1c9bc', fontSize: 18, lineHeight: 1, flexShrink: 0, alignSelf: 'center' }}
               >
                 ✕
               </button>
@@ -91,36 +135,36 @@ export default function AdminHomework() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <form onSubmit={submit} className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl space-y-4">
-            <h3 className="font-serif text-lg text-gray-900">Assign Homework</h3>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) setShowForm(false); }}>
+          <form onSubmit={submit} style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', width: '100%', maxWidth: 460, boxShadow: '0 24px 60px -20px rgba(20,25,40,.5)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: 0 }}>Assign Homework</h3>
             <div className="field">
+              <label>Assign to</label>
               <select className="inp" required value={form.assignedToId} onChange={e => setForm(f => ({ ...f, assignedToId: e.target.value }))}>
-                <option value="">Assign to...</option>
+                <option value="">Select person…</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div className="field">
-              <select className="inp" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                {TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-              </select>
+              <label>Title</label>
+              <input className="inp" placeholder="Assignment title" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div className="field">
-              <input className="inp" placeholder="Title" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              <label>Scripture (optional)</label>
+              <input className="inp" placeholder="e.g. Romans 5:1-11" value={form.scriptureRef} onChange={e => setForm(f => ({ ...f, scriptureRef: e.target.value }))} />
             </div>
             <div className="field">
-              <input className="inp" placeholder="Scripture reference (e.g. Romans 5:1-11)" value={form.scriptureRef} onChange={e => setForm(f => ({ ...f, scriptureRef: e.target.value }))} />
+              <label>Instructions</label>
+              <textarea className="inp" placeholder="What should they do or reflect on?" rows={4} required value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
             </div>
             <div className="field">
-              <textarea className="inp" placeholder="Instructions / reflection questions" rows={4} required value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
-            </div>
-            <div className="field">
+              <label>Due date (optional)</label>
               <input type="date" className="inp" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
             </div>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
-              <button type="submit" disabled={saving} className="btn-primary flex-1">
-                {saving ? 'Assigning...' : 'Assign'}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary" style={{ flex: 2 }}>
+                {saving ? 'Sending…' : 'Assign & Send'}
               </button>
             </div>
           </form>
