@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { prisma } from '../index';
+import { sendHomeworkEmail } from '../lib/mailer';
 
 const router = Router();
 
@@ -29,6 +30,8 @@ router.post('/', requireAuth, async (req, res) => {
     return;
   }
 
+  const admin = await prisma.user.findUnique({ where: { id: me.id }, select: { name: true, email: true } });
+
   const homework = await prisma.homework.create({
     data: {
       title,
@@ -39,8 +42,21 @@ router.post('/', requireAuth, async (req, res) => {
       assignedById: me.id,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     },
-    include: { assignedTo: { select: { id: true, name: true } } },
+    include: { assignedTo: { select: { id: true, name: true, email: true } } },
   });
+
+  if (admin && disciple.email) {
+    sendHomeworkEmail({
+      toEmail: disciple.email,
+      toDiscipleName: disciple.name.split(' ')[0],
+      fromName: admin.name,
+      fromEmail: admin.email,
+      title,
+      scriptureRef: scriptureRef || null,
+      instructions,
+    });
+  }
+
   res.status(201).json(homework);
 });
 

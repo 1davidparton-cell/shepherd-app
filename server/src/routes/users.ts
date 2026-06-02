@@ -155,11 +155,20 @@ router.put('/:id', requireAuth, async (req, res) => {
     res.status(403).json({ error: 'Not your disciple' });
     return;
   }
-  const updated = await prisma.user.update({
-    where: { id: req.params.id },
-    data: { name, email, role, notes },
-  });
-  res.json(updated);
+  try {
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { name, email, role, notes },
+    });
+    res.json(updated);
+  } catch (err: unknown) {
+    const msg = (err as Error).message || '';
+    if (msg.includes('Unique constraint') || msg.includes('unique')) {
+      res.status(409).json({ error: 'That email is already in use by another user.' });
+    } else {
+      res.status(500).json({ error: msg });
+    }
+  }
 });
 
 router.delete('/:id', requireAuth, async (req, res) => {

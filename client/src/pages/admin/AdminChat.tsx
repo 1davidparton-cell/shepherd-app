@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 interface Message { role: 'user' | 'assistant'; content: string }
 interface Session { id: string; contextId: string | null; messages: Message[]; updatedAt: string }
 interface Relationship { type: string; person: { id: string; name: string } }
-interface UserRecord { id: string; name: string; role: string; relationships?: Relationship[] }
+interface UserRecord { id: string; name: string; email: string; role: string; notes?: string; relationships?: Relationship[] }
 interface HomeworkResponse { id: string; responseText: string; submittedAt: string }
 interface HomeworkRecord {
   id: string;
@@ -56,7 +56,7 @@ export default function AdminChat() {
 
   // Edit disciple modal
   const [editing, setEditing] = useState<UserRecord | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', role: 'disciple', notes: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'disciple', notes: '' });
   const [editSaving, setEditSaving] = useState(false);
   const [relForm, setRelForm] = useState({ toId: '', type: 'spouse' });
   const [relSaving, setRelSaving] = useState(false);
@@ -79,7 +79,7 @@ export default function AdminChat() {
 
   const openEdit = (u: UserRecord) => {
     setEditing(u);
-    setEditForm({ name: u.name, role: u.role, notes: '' });
+    setEditForm({ name: u.name, email: u.email || '', role: u.role, notes: u.notes || '' });
     setRelForm({ toId: '', type: 'spouse' });
   };
 
@@ -499,6 +499,12 @@ export default function AdminChat() {
                   <label>Full name</label>
                   <input className="inp" value={editForm.name}
                     onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} required />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input className="inp" type="email" value={editForm.email}
+                    onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="their@email.com" />
                 </div>
                 <div className="field">
                   <label>Role</label>
