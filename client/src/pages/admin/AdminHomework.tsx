@@ -43,6 +43,7 @@ export default function AdminHomework() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', scriptureRef: '', instructions: '', type: 'custom', assignedToId: '', dueDate: '' });
   const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState<string | null>(null);
 
   const load = () => Promise.all([
     api.get<HomeworkRecord[]>('/api/homework').then(setHomework),
@@ -61,6 +62,18 @@ export default function AdminHomework() {
       load();
     } finally {
       setSaving(false);
+    }
+  };
+
+  const resend = async (id: string) => {
+    setResending(id);
+    try {
+      await api.post(`/api/homework/${id}/resend`, {});
+      load();
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setResending(null);
     }
   };
 
@@ -105,7 +118,24 @@ export default function AdminHomework() {
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                <StatusBadge status={h.status} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <StatusBadge status={h.status} />
+                  {(h.status === 'sent' || h.status === 'failed') && (
+                    <button
+                      onClick={() => resend(h.id)}
+                      disabled={resending === h.id}
+                      title="Resend email"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: h.status === 'failed' ? '#991b1b' : '#92610a', display: 'flex', alignItems: 'center' }}
+                    >
+                      <svg
+                        width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"
+                        style={{ transition: 'transform 0.6s ease', transform: resending === h.id ? 'rotate(360deg)' : 'rotate(0deg)' }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {h.status !== 'rejected' && h.status !== 'responded' && (
                   <button
                     onClick={() => setStatus(h.id, 'rejected')}
@@ -123,6 +153,7 @@ export default function AdminHomework() {
                   </button>
                 )}
               </div>
+
               <button
                 onClick={() => remove(h.id)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1c9bc', fontSize: 18, lineHeight: 1, flexShrink: 0, alignSelf: 'center' }}

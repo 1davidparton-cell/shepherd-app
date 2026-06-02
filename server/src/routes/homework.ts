@@ -64,6 +64,44 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json(homework);
 });
 
+// Admin: resend homework email
+router.post('/:id/resend', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const hw = await prisma.homework.findUnique({
+    where: { id: req.params.id },
+    include: { assignedTo: { select: { name: true, email: true } } },
+  });
+  if (!hw || hw.assignedById !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+  if (!hw.assignedTo.email) {
+    res.status(400).json({ error: 'Disciple has no email address' });
+    return;
+  }
+  const admin = await prisma.user.findUnique({ where: { id: me.id }, select: { name: true, email: true } });
+  if (!admin) { res.status(400).json({ error: 'Admin not found' }); return; }
+
+  const ok = await sendHomeworkEmail({
+    toEmail: hw.assignedTo.email,
+    toDiscipleName: hw.assignedTo.name.split(' ')[0],
+    fromName: admin.name,
+    fromEmail: admin.email,
+    title: hw.title,
+    scriptureRef: hw.scriptureRef,
+    instructions: hw.instructions,
+  });
+
+  const newStatus = ok ? (hw.status === 'failed' ? 'sent' : hw.status) : 'failed';
+  await prisma.homework.update({ where: { id: hw.id }, data: { status: newStatus } });
+
+  if (!ok) {
+    res.status(502).json({ error: 'Email failed to send — check SMTP settings' });
+    return;
+  }
+  res.json({ success: true });
+});
+
 // Admin: update homework status (rejected, etc.)
 router.patch('/:id/status', requireAuth, async (req, res) => {
   const me = req.user as { id: string };

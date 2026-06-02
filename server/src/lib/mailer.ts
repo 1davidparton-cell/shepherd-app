@@ -56,10 +56,14 @@ Log in to Shepherd to submit your response.`.trim();
   <p style="font-size:13px;color:#7a6e5f;margin:24px 0 0;">Log in to Shepherd to submit your response.</p>
 </div>`.trim();
 
+  // Gmail SMTP only allows FROM = the authenticated account
+  const smtpUser = process.env.SMTP_USER!;
+
   try {
     await transport.sendMail({
-      from: `"${opts.fromName}" <${opts.fromEmail}>`,
+      from: `"${opts.fromName} via Shepherd" <${smtpUser}>`,
       to: opts.toEmail,
+      replyTo: opts.fromEmail,
       subject: `New Homework: ${opts.title}`,
       text,
       html,
