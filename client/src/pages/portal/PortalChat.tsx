@@ -55,7 +55,7 @@ export default function PortalChat() {
       <div className="chat-scroll" style={{ overflowY: 'auto', flex: 1 }}>
         {messages.length === 0 && (
           <div className="chat-welcome">
-            <p className="cw-label">Your discipling space</p>
+            <p className="cw-label">Your flock space</p>
             <p className="cw-text">{welcomeMessage}</p>
           </div>
         )}

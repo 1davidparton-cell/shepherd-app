@@ -147,6 +147,25 @@ router.delete('/:id/relationships/:toId', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+router.put('/me', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { name, email } = req.body;
+  try {
+    const updated = await prisma.user.update({
+      where: { id: me.id },
+      data: { name, email },
+    });
+    res.json(updated);
+  } catch (err: unknown) {
+    const msg = (err as Error).message || '';
+    if (msg.includes('Unique constraint') || msg.includes('unique')) {
+      res.status(409).json({ error: 'That email is already in use.' });
+    } else {
+      res.status(500).json({ error: msg });
+    }
+  }
+});
+
 router.put('/:id', requireAuth, async (req, res) => {
   const me = req.user as { id: string };
   const { name, email, role, notes } = req.body;

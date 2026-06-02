@@ -32,7 +32,7 @@ export default function AdminDashboard() {
               Active Disciples
             </div>
             <div className="sv">{data?.userCount ?? '—'}</div>
-            <div className="sd">People you are discipling</div>
+            <div className="sd">People in your flock</div>
           </Link>
 
           <Link to="/admin/homework" className={`stat${data?.pendingHomework ? ' hot' : ''}`}>
@@ -51,10 +51,10 @@ export default function AdminDashboard() {
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              Discipling Sessions
+              Flock
             </div>
-            <div className="sv">Chat</div>
-            <div className="sd">Open a discipling session</div>
+            <div className="sv">View</div>
+            <div className="sd">Manage your flock</div>
           </Link>
         </div>
 

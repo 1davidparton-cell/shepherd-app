@@ -96,7 +96,7 @@ export default function AdminSettings() {
 
           <div className="fsec">
             <div className="fst">AI Provider</div>
-            <div className="fsd">Choose the language model powering Shepherd's discipling assistance.</div>
+            <div className="fsd">Choose the language model powering Shepherd's flock assistance.</div>
 
             <div className="seg">
               {PROVIDERS.map(p => (
