@@ -47,7 +47,7 @@ router.post('/', requireAuth, async (req, res) => {
   });
 
   if (admin && disciple.email) {
-    const ok = await sendHomeworkEmail({
+    const { ok } = await sendHomeworkEmail({
       toEmail: disciple.email,
       toDiscipleName: disciple.name.split(' ')[0],
       fromName: admin.name,
@@ -82,7 +82,7 @@ router.post('/:id/resend', requireAuth, async (req, res) => {
   const admin = await prisma.user.findUnique({ where: { id: me.id }, select: { name: true, email: true } });
   if (!admin) { res.status(400).json({ error: 'Admin not found' }); return; }
 
-  const ok = await sendHomeworkEmail({
+  const { ok, error: mailError } = await sendHomeworkEmail({
     toEmail: hw.assignedTo.email,
     toDiscipleName: hw.assignedTo.name.split(' ')[0],
     fromName: admin.name,
@@ -96,7 +96,7 @@ router.post('/:id/resend', requireAuth, async (req, res) => {
   await prisma.homework.update({ where: { id: hw.id }, data: { status: newStatus } });
 
   if (!ok) {
-    res.status(502).json({ error: 'Email failed to send — check SMTP settings' });
+    res.status(502).json({ error: mailError || 'Email failed to send' });
     return;
   }
   res.json({ success: true });

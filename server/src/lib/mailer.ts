@@ -4,9 +4,7 @@ function createTransport() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-
   if (!host || !user || !pass) return null;
-
   return nodemailer.createTransport({
     host,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -25,13 +23,13 @@ export interface HomeworkEmailOptions {
   instructions: string;
 }
 
-export async function sendHomeworkEmail(opts: HomeworkEmailOptions): Promise<boolean> {
+export async function sendHomeworkEmail(opts: HomeworkEmailOptions): Promise<{ ok: boolean; error?: string }> {
   const transport = createTransport();
   if (!transport) {
-    console.log('[mailer] SMTP not configured — skipping email');
-    return false;
+    return { ok: false, error: 'SMTP not configured (check SMTP_HOST, SMTP_USER, SMTP_PASS in .env)' };
   }
 
+  const smtpUser = process.env.SMTP_USER!;
   const scripture = opts.scriptureRef ? `\n\nScripture: ${opts.scriptureRef}` : '';
 
   const text = `Hi ${opts.toDiscipleName},
@@ -56,9 +54,6 @@ Log in to Shepherd to submit your response.`.trim();
   <p style="font-size:13px;color:#7a6e5f;margin:24px 0 0;">Log in to Shepherd to submit your response.</p>
 </div>`.trim();
 
-  // Gmail SMTP only allows FROM = the authenticated account
-  const smtpUser = process.env.SMTP_USER!;
-
   try {
     await transport.sendMail({
       from: `"${opts.fromName} via Shepherd" <${smtpUser}>`,
@@ -68,9 +63,10 @@ Log in to Shepherd to submit your response.`.trim();
       text,
       html,
     });
-    return true;
+    return { ok: true };
   } catch (err) {
-    console.error('[mailer] Failed to send:', (err as Error).message);
-    return false;
+    const msg = (err as Error).message;
+    console.error('[mailer] Failed to send:', msg);
+    return { ok: false, error: msg };
   }
 }
