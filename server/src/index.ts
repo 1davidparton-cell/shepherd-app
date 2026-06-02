@@ -52,6 +52,24 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+import { verifyToken } from './lib/jwt';
+
+app.use(async (req, _res, next) => {
+  if (req.user) return next();
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) {
+    const payload = verifyToken(auth.slice(7));
+    if (payload) {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        include: { _count: { select: { disciples: true } } },
+      });
+      if (user) req.user = user as Express.User;
+    }
+  }
+  next();
+});
+
 import './config/passport';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';

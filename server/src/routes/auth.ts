@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import passport from 'passport';
+import { signToken } from '../lib/jwt';
 
 const router = Router();
 
@@ -14,7 +15,8 @@ router.get('/google/callback',
     failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=account_not_found`,
   }),
   (req, res) => {
-    res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
+    const token = signToken((req.user as { id: string }).id);
+    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth-callback?token=${token}`);
   }
 );
 

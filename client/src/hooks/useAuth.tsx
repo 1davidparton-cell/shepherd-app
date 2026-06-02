@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, getAuthToken, clearAuthToken } from '../lib/api';
 
 export interface User {
   id: string;
@@ -24,25 +24,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
+    const token = getAuthToken();
+    if (!token) { setUser(null); setLoading(false); return; }
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) { setUser(await res.json()); }
+      else { clearAuthToken(); setUser(null); }
+    } catch { setUser(null); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchUser(); }, []);
 
   const logout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+    clearAuthToken();
     setUser(null);
   };
 

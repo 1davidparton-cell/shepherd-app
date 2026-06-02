@@ -1,11 +1,22 @@
 export const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
+export function getAuthToken(): string | null {
+  return localStorage.getItem('shepherd_token');
+}
+export function setAuthToken(token: string): void {
+  localStorage.setItem('shepherd_token', token);
+}
+export function clearAuthToken(): void {
+  localStorage.removeItem('shepherd_token');
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getAuthToken();
   const res = await fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
