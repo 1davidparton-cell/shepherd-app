@@ -242,7 +242,7 @@
 .ac-phead .acts{display:flex;gap:8px;}
 .ac-pill{font-size:12px;font-weight:600;color:#46505f;background:#fff;border:1px solid #e3dccd;
   border-radius:999px;padding:7px 14px;}
-.ac-msgs{flex:1;overflow:hidden;padding:26px 26px 12px;display:flex;flex-direction:column;gap:18px;}
+.ac-msgs{flex:1;overflow-y:auto;padding:26px 26px 12px;display:flex;flex-direction:column;gap:18px;}
 .ac-msg{max-width:74%;}
 .ac-user{align-self:flex-end;background:var(--navy);color:#fff;border-radius:16px 16px 5px 16px;
   padding:13px 17px;font-size:14px;line-height:1.55;}
