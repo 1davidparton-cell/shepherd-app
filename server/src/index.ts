@@ -11,6 +11,8 @@ export const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.set('trust proxy', 1);
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://192.168.1.207:5173',
