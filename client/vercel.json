@@ -1,7 +1,10 @@
 {
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://shepherd-api.vercel.app/api/:path*" },
-    { "source": "/auth/:path*", "destination": "https://shepherd-api.vercel.app/auth/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "version": 2,
+  "routes": [
+    { "src": "/api/proxy", "dest": "/api/proxy" },
+    { "src": "/api/(.*)", "dest": "/api/proxy?p=/api/$1" },
+    { "src": "/auth/(.*)", "dest": "/api/proxy?p=/auth/$1" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
