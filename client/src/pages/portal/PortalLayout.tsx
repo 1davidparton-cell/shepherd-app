@@ -19,6 +19,7 @@ export default function PortalLayout() {
   const navigate = useNavigate();
   const ctx = useRefreshState();
   const [spinning, setSpinning] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [pullY, setPullY] = useState(0);
   const touchStartY = useRef(0);
   const pulling = useRef(false);
@@ -62,39 +63,76 @@ export default function PortalLayout() {
     <RefreshContext.Provider value={ctx}>
       <div className="screen portal">
         <header className="p-head">
-          <button
-            onClick={doRefresh}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Refresh"
-          >
-            <svg
-              width="16" height="16" fill="none" stroke="rgba(249,245,239,0.55)" strokeWidth={2}
-              viewBox="0 0 24 24"
-              style={{ transition: 'transform 0.7s ease', transform: spinning ? 'rotate(720deg)' : 'rotate(0deg)' }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
+          {/* Left — empty, holds grid balance */}
+          <div />
 
+          {/* Center */}
           <span className="p-word" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <ShepherdMark size={22} color="#c9a84c" stroke={9} />
             Shepherd
           </span>
 
-          <div className="p-name">
-            {user?.name && (
+          {/* Right — refresh + avatar menu */}
+          <div style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+            <button
+              onClick={doRefresh}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center' }}
+              title="Refresh"
+            >
+              <svg
+                width="16" height="16" fill="none" stroke="rgba(249,245,239,0.55)" strokeWidth={2}
+                viewBox="0 0 24 24"
+                style={{ transition: 'transform 0.7s ease', transform: spinning ? 'rotate(720deg)' : 'rotate(0deg)' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <span style={{ fontSize: 12, color: 'rgba(249,245,239,0.66)', fontFamily: 'var(--ui)', fontWeight: 500 }}>
+                {user?.name?.split(' ')[0]}
+              </span>
+              <div className="dot">{user?.name?.[0]?.toUpperCase()}</div>
+            </button>
+
+            {menuOpen && (
               <>
-                <span>{user.name.split(' ')[0]}</span>
-                <div className="dot">{user.name[0]}</div>
+                {/* backdrop to close */}
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 10px)', right: 0, zIndex: 50,
+                  background: '#fff', borderRadius: 12, overflow: 'hidden',
+                  boxShadow: '0 8px 32px -8px rgba(20,25,40,.35)',
+                  border: '1px solid #ece5d8', minWidth: 160,
+                }}>
+                  <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid #ece5d8' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>{user?.name}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--stone)', marginTop: 2 }}>{user?.email}</div>
+                  </div>
+                  <RoleToggle asMenuItem onSelect={() => setMenuOpen(false)} />
+                  <button
+                    onClick={() => { setMenuOpen(false); handleLogout(); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                      padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 13.5, color: '#b05050', fontFamily: 'var(--ui)', fontWeight: 500,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
               </>
             )}
-            <RoleToggle />
-            <button
-              onClick={handleLogout}
-              style={{ fontSize: 10, color: 'rgba(249,245,239,0.38)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 6, letterSpacing: '0.06em' }}
-            >
-              Sign out
-            </button>
           </div>
         </header>
 

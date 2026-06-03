@@ -1,7 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export function RoleToggle() {
+interface RoleToggleProps {
+  asMenuItem?: boolean;
+  onSelect?: () => void;
+}
+
+export function RoleToggle({ asMenuItem, onSelect }: RoleToggleProps = {}) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -9,6 +14,27 @@ export function RoleToggle() {
   if (!user || !user.counselorId || user._count.disciples === 0) return null;
 
   const isCounselor = location.pathname.startsWith('/admin');
+
+  if (asMenuItem) {
+    const targetPath = isCounselor ? '/portal' : '/admin';
+    const label = isCounselor ? 'Switch to Disciple' : 'Switch to Counselor';
+    return (
+      <button
+        onClick={() => { onSelect?.(); navigate(targetPath); }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+          padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 13.5, color: 'var(--navy)', fontFamily: 'var(--ui)', fontWeight: 500,
+          textAlign: 'left', borderBottom: '1px solid #ece5d8',
+        }}
+      >
+        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        {label}
+      </button>
+    );
+  }
 
   return (
     <div style={{
