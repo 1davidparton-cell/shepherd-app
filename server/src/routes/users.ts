@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { prisma } from '../index';
+import { sendInviteEmail } from '../lib/mailer';
 
 const router = Router();
 
@@ -86,6 +87,17 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const result = await prisma.user.findUnique({ where: { id: userId } });
+
+    const counselor = await prisma.user.findUnique({ where: { id: me.id } });
+    if (counselor) {
+      sendInviteEmail({
+        toEmail: email,
+        toDiscipleName: name,
+        fromName: counselor.name,
+        fromEmail: counselor.email,
+      }).catch(() => {});
+    }
+
     res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

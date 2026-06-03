@@ -13,6 +13,56 @@ function createTransport() {
   });
 }
 
+export interface InviteEmailOptions {
+  toEmail: string;
+  toDiscipleName: string;
+  fromName: string;
+  fromEmail: string;
+}
+
+export async function sendInviteEmail(opts: InviteEmailOptions): Promise<{ ok: boolean; error?: string }> {
+  const transport = createTransport();
+  if (!transport) {
+    return { ok: false, error: 'SMTP not configured' };
+  }
+
+  const APP_URL = process.env.APP_URL || 'https://myshepherd.vercel.app';
+  const smtpUser = process.env.SMTP_USER!;
+
+  const text = `Hi ${opts.toDiscipleName},
+
+${opts.fromName} has added you to Shepherd, a Biblical counseling and discipleship platform.
+
+Sign in with your Google account at: ${APP_URL}
+
+"He will tend his flock like a shepherd; he will gather the lambs in his arms." — Isaiah 40:11`.trim();
+
+  const html = `
+<div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2b2f38;">
+  <p style="font-size:15px;line-height:1.7;">Hi ${opts.toDiscipleName},</p>
+  <p style="font-size:15px;line-height:1.7;">${opts.fromName} has added you to <strong>Shepherd</strong>, a Biblical counseling and discipleship platform.</p>
+  <a href="${APP_URL}" style="display:inline-block;background:#1a2744;color:#c9a84c;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;margin:20px 0;">Sign in to Shepherd →</a>
+  <p style="font-size:13px;color:#7a6e5f;margin:24px 0 0;">Sign in with the Google account associated with this email address.</p>
+  <p style="font-size:13px;color:#c9a84c;margin:24px 0 0;font-style:italic;">"He will tend his flock like a shepherd; he will gather the lambs in his arms." — Isaiah 40:11</p>
+</div>`.trim();
+
+  try {
+    await transport.sendMail({
+      from: `"${opts.fromName} via Shepherd" <${smtpUser}>`,
+      to: opts.toEmail,
+      replyTo: opts.fromEmail,
+      subject: `${opts.fromName} has invited you to Shepherd`,
+      text,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    const msg = (err as Error).message;
+    console.error('[mailer] Failed to send invite:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
 export interface HomeworkEmailOptions {
   toEmail: string;
   toDiscipleName: string;
