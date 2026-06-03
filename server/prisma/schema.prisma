@@ -15,6 +15,7 @@ model User {
   role        String   @default("counselor")
   counselorId String?
   notes       String?
+  archivedAt  DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

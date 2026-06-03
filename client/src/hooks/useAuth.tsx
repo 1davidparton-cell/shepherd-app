@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: string;
   counselorId: string | null;
+  archivedAt: string | null;
   _count: { disciples: number };
 }
 

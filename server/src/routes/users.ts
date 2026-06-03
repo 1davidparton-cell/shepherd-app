@@ -14,8 +14,12 @@ const REL_MIRROR: Record<string, string> = {
 
 router.get('/', requireAuth, async (req, res) => {
   const me = req.user as { id: string };
+  const showArchived = req.query.archived === '1';
   const users = await prisma.user.findMany({
-    where: { counselorId: me.id },
+    where: {
+      counselorId: me.id,
+      archivedAt: showArchived ? { not: null } : null,
+    },
     orderBy: { createdAt: 'desc' },
     include: {
       assignedHomework: { select: { id: true, completedAt: true } },
@@ -157,6 +161,34 @@ router.delete('/:id/relationships/:toId', requireAuth, async (req, res) => {
   ]);
 
   res.json({ success: true });
+});
+
+router.patch('/:id/archive', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!user || user.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+  const updated = await prisma.user.update({
+    where: { id: req.params.id },
+    data: { archivedAt: new Date() },
+  });
+  res.json(updated);
+});
+
+router.patch('/:id/unarchive', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!user || user.counselorId !== me.id) {
+    res.status(403).json({ error: 'Not your disciple' });
+    return;
+  }
+  const updated = await prisma.user.update({
+    where: { id: req.params.id },
+    data: { archivedAt: null },
+  });
+  res.json(updated);
 });
 
 router.put('/me', requireAuth, async (req, res) => {

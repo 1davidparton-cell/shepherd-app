@@ -33,6 +33,7 @@ function RequireDisciple({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.archivedAt) return <Navigate to="/login?error=archived" replace />;
   if (!user.counselorId) return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }

@@ -62,6 +62,11 @@ export default function LoginPage() {
             Your account hasn't been set up yet. Ask your counselor to add you to Shepherd.
           </p>
         )}
+        {error === 'archived' && (
+          <p style={{ fontSize: '0.875rem', color: '#fca5a5', textAlign: 'center', marginBottom: 12 }}>
+            Your account has been archived. Contact your counselor for access.
+          </p>
+        )}
 
         <a href={`${API_BASE}/auth/google?type=${loginType}`} className="btn-google">
           <svg width="20" height="20" viewBox="0 0 24 24">

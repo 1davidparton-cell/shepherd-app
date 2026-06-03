@@ -8,6 +8,7 @@ interface UserRecord {
   role: string;
   notes: string | null;
   createdAt: string;
+  archivedAt: string | null;
   counselorId: string | null;
   _count: { disciples: number };
   homeworkStats: { total: number; completed: number };
@@ -35,13 +36,17 @@ function badgeClass(role: string) {
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', role: 'disciple', notes: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [archiving, setArchiving] = useState<string | null>(null);
 
-  const load = () => api.get<UserRecord[]>('/api/users').then(setUsers).catch(console.error);
-  useEffect(() => { load(); }, []);
+  const load = (archived = showArchived) =>
+    api.get<UserRecord[]>(`/api/users${archived ? '?archived=1' : ''}`).then(setUsers).catch(console.error);
+
+  useEffect(() => { load(showArchived); }, [showArchived]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,27 +63,52 @@ export default function AdminUsers() {
     }
   };
 
+  const toggleArchive = async (u: UserRecord) => {
+    setArchiving(u.id);
+    try {
+      await api.patch(`/api/users/${u.id}/${u.archivedAt ? 'unarchive' : 'archive'}`);
+      load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setArchiving(null);
+    }
+  };
+
   return (
     <>
       <div className="ad-head">
         <div>
           <h1 className="ht">People</h1>
-          <p className="hs">Your disciples</p>
+          <p className="hs">{showArchived ? 'Archived disciples' : 'Your disciples'}</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
-          Add Disciple
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button
+            className="btn-ghost"
+            onClick={() => setShowArchived(v => !v)}
+            style={{ fontSize: 13, padding: '8px 16px', opacity: showArchived ? 1 : 0.7 }}
+          >
+            {showArchived ? '← Active' : 'Archived'}
+          </button>
+          {!showArchived && (
+            <button className="btn-primary" onClick={() => setShowForm(true)}>
+              Add Disciple
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="ad-body">
         {users.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 0' }}>
             <p style={{ fontFamily: 'var(--head)', fontSize: 18, color: 'var(--stone)', fontStyle: 'italic', margin: '0 0 8px' }}>
-              No disciples yet.
+              {showArchived ? 'No archived disciples.' : 'No disciples yet.'}
             </p>
-            <p style={{ fontSize: 13.5, color: '#a89f8e' }}>
-              Add someone by their Google email and they'll be able to sign in as a Disciple.
-            </p>
+            {!showArchived && (
+              <p style={{ fontSize: 13.5, color: '#a89f8e' }}>
+                Add someone by their Google email and they'll be able to sign in as a Disciple.
+              </p>
+            )}
           </div>
         ) : (
           <div className="table">
@@ -88,9 +118,10 @@ export default function AdminUsers() {
               <span>Email</span>
               <span>Homework</span>
               <span>Disciples</span>
+              <span />
             </div>
             {users.map(u => (
-              <div key={u.id} className="trow">
+              <div key={u.id} className="trow" style={{ opacity: u.archivedAt ? 0.55 : 1 }}>
                 <div className="tname">
                   <div className="av" style={{ background: AVATAR_COLORS[u.role] ?? '#1e3a5f' }}>
                     {u.name[0]?.toUpperCase()}
@@ -106,6 +137,28 @@ export default function AdminUsers() {
                 <span style={{ fontSize: 13, color: u._count.disciples > 0 ? 'var(--navy)' : '#c6bba7', fontWeight: u._count.disciples > 0 ? 600 : 400 }}>
                   {u._count.disciples > 0 ? `${u._count.disciples} disciple${u._count.disciples !== 1 ? 's' : ''}` : '—'}
                 </span>
+                <button
+                  onClick={() => toggleArchive(u)}
+                  disabled={archiving === u.id}
+                  style={{
+                    fontSize: 12,
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    border: '1px solid',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    borderColor: u.archivedAt ? 'rgba(201,168,76,.4)' : 'rgba(176,80,80,.35)',
+                    color: u.archivedAt ? 'var(--gold)' : '#b05050',
+                    fontFamily: 'var(--ui)',
+                    fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    whiteSpace: 'nowrap',
+                    opacity: archiving === u.id ? 0.5 : 1,
+                    transition: 'opacity .15s',
+                  }}
+                >
+                  {archiving === u.id ? '…' : u.archivedAt ? 'Restore' : 'Archive'}
+                </button>
               </div>
             ))}
           </div>
