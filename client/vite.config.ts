@@ -12,7 +12,7 @@ export default defineConfig({
         short_name: 'Shepherd',
         description: 'Biblical counseling and discipleship',
         theme_color: '#1a2744',
-        background_color: '#ffffff',
+        background_color: '#1a2744',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
