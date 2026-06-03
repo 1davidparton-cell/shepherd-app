@@ -5,6 +5,23 @@ import { sendHomeworkEmail } from '../lib/mailer';
 
 const router = Router();
 
+// Admin: get a single homework with full responses
+router.get('/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const hw = await prisma.homework.findUnique({
+    where: { id: req.params.id },
+    include: {
+      assignedTo: { select: { id: true, name: true, role: true } },
+      responses: { orderBy: { submittedAt: 'asc' } },
+    },
+  });
+  if (!hw || hw.assignedById !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+  res.json(hw);
+});
+
 // Admin: list all homework they've assigned
 router.get('/', requireAuth, async (req, res) => {
   const me = req.user as { id: string };

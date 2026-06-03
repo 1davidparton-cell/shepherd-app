@@ -8,7 +8,6 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminChat from './pages/admin/AdminChat';
 import AdminHomework from './pages/admin/AdminHomework';
-import AdminResponses from './pages/admin/AdminResponses';
 import PortalLayout from './pages/portal/PortalLayout';
 import PortalHome from './pages/portal/PortalHome';
 import PortalChat from './pages/portal/PortalChat';
@@ -60,7 +59,6 @@ export default function App() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="chat" element={<AdminChat />} />
           <Route path="homework" element={<AdminHomework />} />
-          <Route path="responses" element={<AdminResponses />} />
         </Route>
 
         <Route path="/portal" element={<RequireDisciple><PortalLayout /></RequireDisciple>}>
