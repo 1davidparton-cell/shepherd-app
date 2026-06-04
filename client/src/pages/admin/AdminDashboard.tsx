@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
+import ShareInvite from '../../components/ShareInvite';
 
 interface DashboardData {
   userCount: number;
@@ -10,6 +11,7 @@ interface DashboardData {
 
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     api.get<DashboardData>('/api/admin/dashboard').then(setData).catch(console.error);
@@ -58,6 +60,17 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
+        <button
+          onClick={() => setShareOpen(true)}
+          className="btn-primary"
+          style={{ width: '100%', justifyContent: 'center', marginTop: 20, padding: '14px 18px', fontSize: 14 }}
+        >
+          <svg fill="none" stroke="currentColor" strokeWidth={1.9} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM19 8v6M22 11h-6" />
+          </svg>
+          Share Shepherd with a new disciple
+        </button>
+
         <div className="ad-sub">Recent Session Notes</div>
 
         <div className="note-list">
@@ -75,6 +88,8 @@ export default function AdminDashboard() {
           ))}
         </div>
       </div>
+
+      <ShareInvite open={shareOpen} onClose={() => setShareOpen(false)} />
     </>
   );
 }

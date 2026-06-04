@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import ShareInvite from '../../components/ShareInvite';
 
 const ROLE_GREETING: Record<string, string> = {
   disciple:     'Welcome back',
@@ -15,12 +17,32 @@ const CHEVRON = (
 
 export default function PortalHome() {
   const { user } = useAuth();
+  const [shareOpen, setShareOpen] = useState(false);
   if (!user) return null;
 
   return (
     <div className="ph-body">
-      <p className="ph-greet">{ROLE_GREETING[user.role] || 'Welcome back'}</p>
-      <h2 className="ph-name">{user.name.split(' ')[0]}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <p className="ph-greet">{ROLE_GREETING[user.role] || 'Welcome back'}</p>
+          <h2 className="ph-name">{user.name.split(' ')[0]}</h2>
+        </div>
+        <button
+          onClick={() => setShareOpen(true)}
+          title="Invite someone to Shepherd"
+          style={{
+            flexShrink: 0, marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: '#fff', color: 'var(--navy)', border: '1px solid var(--card-line)',
+            borderRadius: 999, padding: '8px 14px', fontFamily: 'var(--ui)', fontSize: 12.5,
+            fontWeight: 600, cursor: 'pointer', boxShadow: '0 1px 3px rgba(40,30,15,.05)',
+          }}
+        >
+          <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.9} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM19 8v6M22 11h-6" />
+          </svg>
+          Invite
+        </button>
+      </div>
 
       <blockquote className="ph-verse">
         The Lord is my shepherd; I shall not want.
@@ -85,6 +107,8 @@ export default function PortalHome() {
           <div className="chev">{CHEVRON}</div>
         </Link>
       </div>
+
+      <ShareInvite open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }

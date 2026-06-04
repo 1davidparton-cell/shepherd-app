@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ShepherdMark } from '../../components/ShepherdMark';
 import { RoleToggle } from '../../components/RoleToggle';
@@ -17,6 +17,8 @@ const PULL_THRESHOLD = 72;
 export default function PortalLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isReader = location.pathname === '/portal/scripture';
   const ctx = useRefreshState();
   const [spinning, setSpinning] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -62,6 +64,7 @@ export default function PortalLayout() {
   return (
     <RefreshContext.Provider value={ctx}>
       <div className="screen portal">
+        {!isReader && (
         <header className="p-head">
           {/* Left — empty, holds grid balance */}
           <div />
@@ -135,6 +138,7 @@ export default function PortalLayout() {
             )}
           </div>
         </header>
+        )}
 
         {/* Pull-to-refresh indicator */}
         {pullY > 4 && (
