@@ -18,6 +18,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const ctx = useRefreshState();
   const [spinning, setSpinning] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: '', email: '' });
   const [profileSaving, setProfileSaving] = useState(false);
@@ -61,7 +62,8 @@ export default function AdminLayout() {
   return (
     <RefreshContext.Provider value={ctx}>
       <div className="w-full flex" style={{ height: '100vh', background: '#f5f1ea' }}>
-        <aside className="ad-side">
+        {sidebarOpen && <div className="ad-scrim" onClick={() => setSidebarOpen(false)} />}
+        <aside className={'ad-side' + (sidebarOpen ? ' open' : '')}>
           <div className="ad-brand">
             <ShepherdMark size={36} color="#c9a84c" />
             <div className="bw">
@@ -76,6 +78,7 @@ export default function AdminLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => 'ad-navitem' + (isActive ? ' active' : '')}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,6 +130,17 @@ export default function AdminLayout() {
         </aside>
 
         <main className="ad-main">
+          <div className="ad-mobilebar">
+            <button className="ad-burger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="ad-mb-brand">
+              <ShepherdMark size={24} color="#c9a84c" />
+              <b>Shepherd</b>
+            </div>
+          </div>
           <Outlet key={ctx.key} />
         </main>
 

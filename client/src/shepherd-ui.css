@@ -552,3 +552,56 @@
 .set-seg .opt.on{background:var(--navy);color:#fff;}
 .set-note{font-family:var(--body);font-style:italic;font-size:12.5px;line-height:1.55;color:var(--stone);
   margin:2px 2px 8px;}
+
+/* ===================== responsive — admin/counselor on mobile ===================== */
+/* The admin chrome was authored for a fixed 1280px desktop canvas (250px sidebar +
+   fluid main). Below 820px that sidebar ate the viewport and main overflowed off-screen.
+   On mobile the sidebar becomes an off-canvas drawer behind a compact top bar; each
+   admin page reflows to a single column. Desktop (>820px) is untouched. */
+.ad-mobilebar{display:none;}
+@media (max-width:820px){
+  /* Shell: sidebar -> off-canvas drawer, main goes full width */
+  .ad-side{position:fixed;top:0;left:0;bottom:0;z-index:60;width:270px;max-width:82vw;
+    transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.38);}
+  /* Fixed-in-place (not portaled) is safe here: no transform/filter/backdrop-filter
+     ancestor exists to trap the fixed drawer, so it anchors to the viewport correctly. */
+  .ad-side.open{transform:translateX(0);}
+  .ad-scrim{position:fixed;inset:0;z-index:55;background:rgba(15,20,35,.5);}
+  .ad-main{flex:1 1 100%;min-width:0;}
+
+  /* Compact top bar with hamburger */
+  .ad-mobilebar{display:flex;align-items:center;gap:12px;flex:0 0 52px;height:52px;padding:0 14px;
+    background:var(--navy);color:var(--cream);box-shadow:0 1px 0 rgba(0,0,0,.12);position:relative;z-index:30;}
+  .ad-burger{display:flex;align-items:center;justify-content:center;background:none;border:none;
+    cursor:pointer;color:var(--cream);padding:6px;margin:-6px;}
+  .ad-burger svg{width:24px;height:24px;}
+  .ad-mb-brand{display:flex;align-items:center;gap:9px;}
+  .ad-mb-brand b{font-family:var(--head);font-size:19px;font-weight:600;color:var(--cream);letter-spacing:.01em;}
+
+  /* Page header/body padding down for small screens */
+  .ad-head{padding:20px 18px 16px;flex-wrap:wrap;gap:10px;}
+  .ad-head .ht{font-size:24px;}
+  .ad-head .hs{margin-top:4px;}
+  .ad-body{padding:18px 16px;}
+
+  /* Dashboard stat cards stack */
+  .ad-stats{grid-template-columns:1fr;gap:14px;}
+  .stat .sv{font-size:38px;}
+
+  /* Flock chat: stack the two panes (people list on top, builder below) */
+  .ac{flex-direction:column;height:auto;flex:1;min-height:0;}
+  .ac-list{width:100%;flex:0 0 auto;max-height:38vh;border-right:none;border-bottom:1px solid #e9e2d6;}
+  .ac-panel{width:100%;flex:1;min-height:0;}
+  .ac-phead{padding:14px 16px;}
+  .ac-msgs{padding:18px 16px 10px;}
+  .ac-msg{max-width:90%;}
+  .ac-input{padding:14px 16px 18px;}
+
+  /* Users table: drop secondary columns (email/homework/disciples), keep name·role·action */
+  .table .thead,.table .trow{grid-template-columns:1fr auto auto;padding:0 14px;column-gap:10px;}
+  .table .thead :nth-child(3),.table .thead :nth-child(4),.table .thead :nth-child(5),
+  .table .trow :nth-child(3),.table .trow :nth-child(4),.table .trow :nth-child(5){display:none;}
+
+  /* Keep centered modals off the screen edges */
+  .fixed.inset-0{padding:16px;}
+}
