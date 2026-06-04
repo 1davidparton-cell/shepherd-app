@@ -8,7 +8,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const error = params.get('error');
-  const [loginType, setLoginType] = useState<'counselor' | 'disciple'>('counselor');
+  const [loginType, setLoginType] = useState<'disciple' | 'counselor'>('disciple');
 
   useEffect(() => {
     if (!loading && user) navigate('/', { replace: true });
@@ -29,7 +29,7 @@ export default function LoginPage() {
             borderRadius: 999,
             overflow: 'hidden',
           }}>
-            {(['counselor', 'disciple'] as const).map(t => (
+            {(['disciple', 'counselor'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setLoginType(t)}
