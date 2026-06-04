@@ -1,4 +1,9 @@
-export const API_BASE = import.meta.env.VITE_API_URL ?? '';
+// In production the API lives on a separate origin (shepherd-api) and must be an
+// absolute URL — a blank VITE_API_URL makes auth links resolve to the SPA itself
+// and blanks the sign-in page. Fall back to the prod backend when the env var is
+// unset/empty; keep relative ('') in dev so Vite's proxy handles /api and /auth.
+export const API_BASE =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://shepherd-api.vercel.app' : '');
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('shepherd_token');
