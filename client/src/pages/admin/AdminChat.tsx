@@ -33,6 +33,23 @@ const REL_LABELS: Record<string, string> = {
 
 const DISPLAY_ROLES = ['disciple', 'co_counselor', 'counselor'];
 
+function parseHomework(messages: Message[]): { title: string; scriptureRef: string; instructions: string } {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== 'assistant') continue;
+    const titleMatch = m.content.match(/^TITLE:\s*(.+)$/m);
+    if (!titleMatch) continue;
+    const scriptureMatch = m.content.match(/^SCRIPTURE:\s*(.+)$/m);
+    const instructionsMatch = m.content.match(/^INSTRUCTIONS:\s*([\s\S]+)$/m);
+    return {
+      title: titleMatch[1].trim(),
+      scriptureRef: scriptureMatch ? scriptureMatch[1].trim() : '',
+      instructions: instructionsMatch ? instructionsMatch[1].trim() : '',
+    };
+  }
+  return { title: '', scriptureRef: '', instructions: '' };
+}
+
 function initials(name: string) {
   return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 }
@@ -291,7 +308,7 @@ export default function AdminChat() {
               <button
                 className="btn-primary"
                 style={{ fontSize: 12.5, padding: '8px 16px', borderRadius: 8 }}
-                onClick={() => setShowSend(true)}
+                onClick={() => { setHwForm(parseHomework(messages)); setShowSend(true); }}
               >
                 Send Homework to {selectedUser.name.split(' ')[0]}
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginLeft: 6, display: 'inline' }}>
@@ -393,8 +410,8 @@ export default function AdminChat() {
       {showSend && selectedUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) setShowSend(false); }}>
           <form onSubmit={sendHomework} style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', width: '100%', maxWidth: 460, boxShadow: '0 24px 60px -20px rgba(20,25,40,.5)' }}>
-            <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: '0 0 4px' }}>Send Homework</h3>
-            <p style={{ fontSize: 12.5, color: 'var(--stone)', margin: '0 0 20px' }}>to {selectedUser.name}</p>
+            <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: '0 0 4px' }}>Send Homework to {selectedUser.name.split(' ')[0]}</h3>
+            <p style={{ fontSize: 12.5, color: 'var(--stone)', margin: '0 0 20px' }}>Review and confirm before sending to {selectedUser.name}.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="field">
                 <label>Title</label>
