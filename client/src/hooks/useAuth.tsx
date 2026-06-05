@@ -31,10 +31,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (res.ok) { setUser(await res.json()); }
-      else { clearAuthToken(); setUser(null); }
-    } catch { setUser(null); }
-    finally { setLoading(false); }
+      if (res.ok) {
+        setUser(await res.json());
+      } else if (res.status === 401) {
+        clearAuthToken();
+        setUser(null);
+      }
+      // any other status (403, 5xx, network hiccup) — keep token, stay silent
+    } catch {
+      // network error / app resumed offline — keep token, don't sign out
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchUser(); }, []);

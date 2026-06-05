@@ -5,22 +5,7 @@ import { sendHomeworkEmail } from '../lib/mailer';
 
 const router = Router();
 
-// Admin: get a single homework with full responses
-router.get('/:id', requireAuth, async (req, res) => {
-  const me = req.user as { id: string };
-  const hw = await prisma.homework.findUnique({
-    where: { id: req.params.id },
-    include: {
-      assignedTo: { select: { id: true, name: true, role: true } },
-      responses: { orderBy: { submittedAt: 'asc' } },
-    },
-  });
-  if (!hw || hw.assignedById !== me.id) {
-    res.status(403).json({ error: 'Not your homework' });
-    return;
-  }
-  res.json(hw);
-});
+// ─── Named/static routes FIRST — must precede /:id ─────────────────────────
 
 // Admin: list all homework they've assigned
 router.get('/', requireAuth, async (req, res) => {
@@ -31,6 +16,39 @@ router.get('/', requireAuth, async (req, res) => {
     include: {
       assignedTo: { select: { id: true, name: true, role: true } },
       responses: { select: { id: true, submittedAt: true } },
+    },
+  });
+  res.json(homework);
+});
+
+// Disciple: list their own homework with all responses
+router.get('/my', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const homework = await prisma.homework.findMany({
+    where: { assignedToId: me.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      responses: {
+        where: { userId: me.id },
+        orderBy: { submittedAt: 'asc' },
+      },
+      assignedBy: { select: { name: true } },
+    },
+  });
+  res.json(homework);
+});
+
+// Admin: get all homework + full response history for a specific disciple
+router.get('/disciple/:discipleId', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const disciple = await prisma.user.findFirst({ where: { id: req.params.discipleId, counselorId: me.id } });
+  if (!disciple) { res.status(403).json({ error: 'Not your disciple' }); return; }
+
+  const homework = await prisma.homework.findMany({
+    where: { assignedToId: req.params.discipleId, assignedById: me.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      responses: { orderBy: { submittedAt: 'asc' } },
     },
   });
   res.json(homework);
@@ -81,6 +99,40 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json(homework);
 });
 
+// Disciple: mark homework as viewed
+router.post('/:id/view', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
+  if (!hw || hw.assignedToId !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+  if (hw.status === 'sent' || hw.status === 'failed') {
+    await prisma.homework.update({ where: { id: hw.id }, data: { status: 'viewed' } });
+  }
+  res.json({ success: true });
+});
+
+// Disciple: submit a response (can submit multiple times)
+router.post('/:id/respond', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const { responseText } = req.body;
+
+  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
+  if (!hw || hw.assignedToId !== me.id) {
+    res.status(403).json({ error: 'Not your homework' });
+    return;
+  }
+
+  const response = await prisma.homeworkResponse.create({
+    data: { homeworkId: hw.id, userId: me.id, responseText },
+  });
+
+  await prisma.homework.update({ where: { id: hw.id }, data: { status: 'responded' } });
+
+  res.status(201).json(response);
+});
+
 // Admin: resend homework email
 router.post('/:id/resend', requireAuth, async (req, res) => {
   const me = req.user as { id: string };
@@ -119,7 +171,7 @@ router.post('/:id/resend', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Admin: update homework status (rejected, etc.)
+// Admin: update homework status
 router.patch('/:id/status', requireAuth, async (req, res) => {
   const me = req.user as { id: string };
   const { status } = req.body;
@@ -149,71 +201,23 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Admin: get all homework + full response history for a specific disciple
-router.get('/disciple/:discipleId', requireAuth, async (req, res) => {
-  const me = req.user as { id: string };
-  const disciple = await prisma.user.findFirst({ where: { id: req.params.discipleId, counselorId: me.id } });
-  if (!disciple) { res.status(403).json({ error: 'Not your disciple' }); return; }
+// ─── Parameterized route LAST — catches /:id after all named routes ─────────
 
-  const homework = await prisma.homework.findMany({
-    where: { assignedToId: req.params.discipleId, assignedById: me.id },
-    orderBy: { createdAt: 'desc' },
+// Admin: get single homework with full responses (counselor or assigned disciple)
+router.get('/:id', requireAuth, async (req, res) => {
+  const me = req.user as { id: string };
+  const hw = await prisma.homework.findUnique({
+    where: { id: req.params.id },
     include: {
+      assignedTo: { select: { id: true, name: true, role: true } },
       responses: { orderBy: { submittedAt: 'asc' } },
     },
   });
-  res.json(homework);
-});
-
-// Disciple: list their own homework with all responses
-router.get('/my', requireAuth, async (req, res) => {
-  const me = req.user as { id: string };
-  const homework = await prisma.homework.findMany({
-    where: { assignedToId: me.id },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      responses: {
-        where: { userId: me.id },
-        orderBy: { submittedAt: 'asc' },
-      },
-      assignedBy: { select: { name: true } },
-    },
-  });
-  res.json(homework);
-});
-
-// Disciple: mark homework as viewed (called when they open it)
-router.post('/:id/view', requireAuth, async (req, res) => {
-  const me = req.user as { id: string };
-  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
-  if (!hw || hw.assignedToId !== me.id) {
+  if (!hw || (hw.assignedById !== me.id && hw.assignedToId !== me.id)) {
     res.status(403).json({ error: 'Not your homework' });
     return;
   }
-  if (hw.status === 'sent' || hw.status === 'failed') {
-    await prisma.homework.update({ where: { id: hw.id }, data: { status: 'viewed' } });
-  }
-  res.json({ success: true });
-});
-
-// Disciple: submit a response (can submit multiple times)
-router.post('/:id/respond', requireAuth, async (req, res) => {
-  const me = req.user as { id: string };
-  const { responseText } = req.body;
-
-  const hw = await prisma.homework.findUnique({ where: { id: req.params.id } });
-  if (!hw || hw.assignedToId !== me.id) {
-    res.status(403).json({ error: 'Not your homework' });
-    return;
-  }
-
-  const response = await prisma.homeworkResponse.create({
-    data: { homeworkId: hw.id, userId: me.id, responseText },
-  });
-
-  await prisma.homework.update({ where: { id: hw.id }, data: { status: 'responded' } });
-
-  res.status(201).json(response);
+  res.json(hw);
 });
 
 export default router;

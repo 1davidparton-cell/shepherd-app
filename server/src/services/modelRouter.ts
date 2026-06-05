@@ -10,7 +10,7 @@ export type ModelTask =
   | 'homework_synthesis'
   | 'scripture_query';
 
-const HAIKU = 'claude-haiku-4-5';
+const HAIKU = 'claude-haiku-4-5-20251001';
 
 const ANTHROPIC_MODEL_MAP: Record<ModelTask, string> = {
   personal_chat:      HAIKU,
