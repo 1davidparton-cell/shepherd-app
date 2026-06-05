@@ -409,7 +409,7 @@ export default function AdminChat() {
       {/* Send Homework modal */}
       {showSend && selectedUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => { if (e.target === e.currentTarget) setShowSend(false); }}>
-          <form onSubmit={sendHomework} style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', width: '100%', maxWidth: 460, boxShadow: '0 24px 60px -20px rgba(20,25,40,.5)' }}>
+          <form onSubmit={sendHomework} style={{ background: '#fff', borderRadius: 16, padding: '28px 28px 24px', width: '100%', maxWidth: 460, boxShadow: '0 24px 60px -20px rgba(20,25,40,.5)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontFamily: 'var(--head)', fontSize: 20, color: 'var(--navy)', margin: '0 0 4px' }}>Send Homework to {selectedUser.name.split(' ')[0]}</h3>
             <p style={{ fontSize: 12.5, color: 'var(--stone)', margin: '0 0 20px' }}>Review and confirm before sending to {selectedUser.name}.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
