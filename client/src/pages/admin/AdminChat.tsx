@@ -82,6 +82,7 @@ export default function AdminChat() {
   const [showSend, setShowSend] = useState(false);
   const [hwForm, setHwForm] = useState({ title: '', scriptureRef: '', instructions: '' });
   const [hwSaving, setHwSaving] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -308,9 +309,36 @@ export default function AdminChat() {
               <button
                 className="btn-primary"
                 style={{ fontSize: 12.5, padding: '8px 16px', borderRadius: 8 }}
-                onClick={() => { setHwForm(parseHomework(messages)); setShowSend(true); }}
+                onClick={async () => {
+                  const parsed = parseHomework(messages);
+                  if (parsed.title) {
+                    setHwForm(parsed);
+                    setShowSend(true);
+                    return;
+                  }
+                  if (!session || sending || !selectedUser) return;
+                  setFinalizing(true);
+                  setSending(true);
+                  const prompt = `Finalize the homework for ${selectedUser.name.split(' ')[0]} now in the exact required format: TITLE, SCRIPTURE, INSTRUCTIONS.`;
+                  setMessages(prev => [...prev, { role: 'user', content: prompt }]);
+                  try {
+                    const result = await api.post<{ content: string; messages: Message[] }>(
+                      `/api/chat/sessions/${session.id}/message`,
+                      { content: prompt, contextId: selectedUser.id }
+                    );
+                    setMessages(result.messages);
+                    setHwForm(parseHomework(result.messages));
+                    setShowSend(true);
+                  } catch (err) {
+                    setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${(err as Error).message}` }]);
+                  } finally {
+                    setSending(false);
+                    setFinalizing(false);
+                  }
+                }}
+                disabled={sending || finalizing}
               >
-                Send Homework to {selectedUser.name.split(' ')[0]}
+                {finalizing ? 'Preparing…' : `Send Homework to ${selectedUser.name.split(' ')[0]}`}
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginLeft: 6, display: 'inline' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
